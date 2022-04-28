@@ -1,0 +1,97 @@
+\documentclass[]{article}
+
+%opening
+\title{Research Proposal}
+\author{Remi Desmartin}
+
+\begin{document}
+
+\maketitle
+
+\iffalse
+\begin{abstract}
+
+\end{abstract}
+\fi
+
+\section{Background}
+% Critical software systems are increasingly complex, so they benefit from formal verification
+The increased complexity of critical software systems has made traditional testing tools insufficient for detecting edge failure cases. One solution, which has gained momentum in the recent years, is the use of formal methods, that use rigorous mathematical tools to model the system, formulate specifications and verify that they are met \cite{amazon_paper}. 
+
+% ML is involved in these systems, so it needs to be verified.
+The introduction of artificial intelligence (AI) components, often relying on machine learning (ML) algorithms is a contributing factor in the complexification of safety-critical systems. Neural networks (NN), a group of ML algorithm, have shown exceptional performance at dealing with noisy data and have been deployed in safety-critical applications like autonomous cars \cite{} or automated trading agents \cite{bao}. Because ML components' failure can lead to the of the whole system's failure \cite{car_paper}, formally verifying the system necessarily involves verifying the ML component.
+
+% Imandra is a formal verification tool that targets complex systems.
+Imandra~\cite{PassmoreCIABKKM20} is a verification tool that has been successfully applied to verifying complex systems in the FinTech
+domain~\cite{Passmore21}, like trading algorithms and blockchain smart contract infrastructure. 
+%Grant's description
+It combines features of both functional languages and interactive and automated theorem 
+provers. Imandra's logic is based on a pure, higher-order subset of OCaml, and
+functions written in Imandra are at the same time valid OCaml code that can be
+executed. Imandra's mode of interactive proof
+development is based on a typed, higher-order lifting of the \emph{Boyer-Moore
+	waterfall}~\cite{BM79} for automated induction, tightly integrated with novel
+techniques for SMT modulo recursive functions. 
+In short, Imandra is both a functional programming language in which programs can be implemented and executed, and a reasoning engine which can apply formal verification techniques to these programs.
+
+% Quick overview of NN verification
+Verifying ML components (especially NNs) has been the focus of recent research, essentially divided into SMT-based tools \cite{reluplex, etc.} and those based on abstract interpretation \cite{eran, etc.}, for instance studying the propagation of geometric shapes between the layers.
+The biggest shortcoming of NNs is their sensitivity to small variations in the input \cite{Carlini}. To counter that, a large part of verification efforts focus on proving that NNs classify consistently examples that are close within the input space. This property is called robustness. Multiple formal definitions are used \cite{casadio}, and even though it is the primary focus of NN verification its scope is limited. Other properties like fairness or domain-specific property are also desirable and investigated.
+
+
+\section{Research Question}
+% Limitations: usually not flexible (limited to specific classes of NN or property type) and not well-integrated into larger verification frameworks
+Currently, verification of ML algorithms such as neural networks requires dedicated tools. These tools are often limited to narrow use cases: a single family of NNs (e.g. MLP with Relu activation, RNN) or a single type of properties (e.g. a single definition of robustness). In addition, the integration into more generic and verification frameworks that are able to certify the larger systems containing ML.
+
+There is a need for a flexible and generic NN verification framework that allows building systems with ML components with strong safety and security guarantees.
+
+In particular, we will investigate the following aspects:
+\begin{enumerate}
+	\item What is the role of ML-components in complex systems ? (e.g. simple inputs to controllers, or controllers themselves?);
+	\item How are NN components verified ?
+	\item the integration of ML components' verification in larger verification frameworks
+\end{enumerate}
+
+More questions will arise from the exploration of these initial questions.
+
+
+
+\section{Aims}
+Our aim is to contribute to the available verification tools for NNs in order to make it easier to deploy reliable and trustworthy software. To that end, our objectives are the following:
+\begin{enumerate}
+\item Investigating the questions above
+\item integrate third-party NN verifiers into a generic verification tool like Imandra
+\item to produce a fully functional ML library in Imandra, which will include domain-specific proof heuristics.
+\end{enumerate}
+
+\section{Methodology}
+First, the initial investigation will help us define our library's structure, such as the data types used and exposed API. 
+In order to evaluate our library, it will be evaluated against standard NN Verification benchmarks such as the ones proposed by the NNVC~\cite{}.
+
+\section{Research Environment and Supervision}
+Imandra Inc will sponsor this research. 
+Prof. Ekaterina Komendentskaya, Dr. Grant Passmore and ?? will co-supervise this research.
+Passmore is the creator of Imandra and the co-founder and co-CEO of Imandra Inc, the company that comercialises it.
+
+\section{Feasibility}
+The projective timeline is that roughly one year is dedicated to each objective of the project.
+I started learning about automated reasoning and formal verification of NNs during my Master's dissertation. This dissertation allowed me to consolidate my knowledge in functional programming, a central part of the Imandra theorem prover, and allowed me to get acquainted with automated reasoning and verification.
+
+As Imandra Inc is a partner of the Lab for AI Verification (and a sponsor for this research), we will have support in terms of infrastructure and technical support. An earlier collaboration for the Master's dissertation was fruitful.
+
+\section{Potential Impact}
+Doing this research within the Lab for AI Verification would allow to contribute to the discussion and research on NN Verification, in particular by presenting early results to seminars organised by the lab and to specialised conferences like FoMlAs.
+
+The partnership with Imandra Inc. means that successful results would impact directly their users by allowing them to formally verify their ML-based systems.
+
+
+
+\end{document}
+
+
+
+\iffalse
+I'd rather deploy a strategy that says: Here is Imandra and its various applications. These various applications may have ML/AI components in the future. This thesis will investigate (a) role of ML/AI components of complex systems (b) methods of verification of these (c) methods for integration of various AI/ML verification components into larger verification projects (d) The project will produce a fully functional AI/ML library in Imandra, which will include domain-specific proof heuristics.
+
+
+\fi
