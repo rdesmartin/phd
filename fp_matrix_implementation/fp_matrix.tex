@@ -1,0 +1,57 @@
+\documentclass[]{article}
+
+\usepackage{listings}
+%\usepackage[backend=biber]{biblatex}
+
+
+%opening
+\title{Survey of Matrix Implementations in Functional Programming Languages}
+\author{Remi Desmartin}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Intro}
+This piece is written in the context of the formal verification of neural networks (NN). Matrices are a data structure essential to formalising NN. Functional programming languages, because they are pure (no side-effects), are particularly well-suited for automated reasoning tools which can be used for NN verification.
+
+\section{Matrix as Lists of Lists}
+\subsection{using Sized Lists or Vectors}
+
+grantsparse1996 proposes 4 sparse array-based matrix implementations. They use an array-as-trees representation which allows to optimise for sparse arrays (subtrees where all the leafs are 0 are replaced by a 0-leaf) with banded matrices A mutable array implementation using monadic operations is also mentioned but not considered.
+
+Binary trees and lists of row-fragments: binary tree array of sparse Vectors defined as \lstlisting{[(Int, [Double])]}
+
+A generalised envelope scheme: matrix is cut up in sections
+A quadtree scheme: Triangular matrix is split up in 2 triangular and a rectangular one. 
+A standard quadtree structure is used for the rectangular matrix.
+
+A Two-copy list of row-segments scheme: list of row-segments and list of column-segments in order to iterate over columns easily. Disadvantage: 2x more space is used; can be used to complement the 2 first previous methods (quadtree already bidimensional)
+
+%list = inefficient random-access to data
+%array = large storing size for sparse array 
+
+
+\subsection{using Refined Types}
+%
+Coq/Mathcomp/SSReflex: the size of the matrix is defined as a refinement type and used to check that matrix have the appropriate size in multiplications
+Heras et al, discuss implementation but do not critique it.
+
+
+\subsection{using Arrays}
+?
+
+\subsection{using Monadic operations to check size}
+Allows to check for valid matrix sizes when no refinement types are available. 
+Drawback: introduces a lot of pattern matching, so a lot of split cases which increases the size of the program to check exponentially
+Drawback: no optimisation for non-sparse matrices
+
+\section{Matrix as Maps}
+
+%\bibliography{MatrixFormalisation}
+
+\end{document}
