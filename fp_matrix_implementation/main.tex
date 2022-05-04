@@ -1,0 +1,114 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.21 of 2022/01/12
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
+% T1 fonts will be used to generate the final print and online PDFs,
+% so please use T1 fonts in your manuscript whenever possible.
+% Other font encondings may result in incorrect characters.
+%
+\usepackage{graphicx}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following two lines
+% to display URLs in blue roman font according to Springer's eBook style:
+%\usepackage{color}
+%\renewcommand\UrlFont{\color{blue}\rmfamily}
+%
+\usepackage{listings}
+
+\begin{document}
+%
+\title{Survey of Matrix Implementation in Functional Programming Languages\thanks{Supported by organization x.}}
+%
+%\titlerunning{Abbreviated paper title}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+\author{Remi Desmartin\inst{1} \and
+Grant Passmore\inst{2}\and
+Ekaterina Kommendentskaya\inst{1}\and
+Matthew Daggit\inst{1}}
+%
+\authorrunning{R. Desmartin et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+\institute{Heriot-Watt University, Edinburgh, UK\and
+Imandra Inc. Austin TX, USA
+\email{lncs@springer.com}\\
+\url{http://www.springer.com/gp/computer-science/lncs} \and
+ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
+\email{\{abc,lncs\}@uni-heidelberg.de}}
+%
+\maketitle              % typeset the header of the contribution
+%
+\begin{abstract}
+The demand for formal verification tools for neural networks (NN) has increased as NNs have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising NNs. Functional programming languages (FPLs), are particularly well-suited for automated reasoning tools which can be used for NN verification.
+In this paper, we survey different implementations of matrices in functional programming languages and how they impact the verification.
+
+\keywords{Neural networks  \and Automated reasoning \and Formal verification \and Functional programming \and Imandra.}
+\end{abstract}
+%
+%
+%
+\section{Matrix as Lists of Lists}
+\subsection{using Sized Lists or Vectors}
+
+Grant et al. (\cite{grant_sparse_1996}) proposes 4 sparse list-based matrix implementations. They use an array-as-trees representation which allows to optimise for sparse arrays (subtrees where all the leafs are 0 are replaced by a 0-leaf).
+
+Binary trees and lists of row-fragments: binary tree array of sparse Vectors defined as \lstinline{[(Int, [Double])]}
+
+A generalised envelope scheme: matrix is cut up in sections
+A quadtree scheme: Triangular matrix is split up in 2 triangular and a rectangular one. 
+A standard quadtree structure is used for the rectangular matrix.
+
+A Two-copy list of row-segments scheme: list of row-segments and list of column-segments in order to iterate over columns easily. Con: 2x more space is used; can be used to improve the 2 first previous methods (quadtree already bidimensional)
+
+Pros of sparse list-based matrix representation: optimised for sparse matrices. Optimised for the specific operation considered in the paper (solving of linear systems of equations using a Cholesky scheme)
+
+%list = inefficient random-access to data
+%array = large storing size for sparse array 
+
+
+\subsection{Refined Types}
+%
+Coq/Mathcomp/SSReflex: the size of the matrix is defined as a refinement type and used to check that matrix have the appropriate size in multiplications
+Heras et al \cite{heras_incidence_2011} discuss implementation; correctness is checked at compile-time.
+
+This is also used in Starchild/Lazuli \cite{kokke_neural_2020}.
+
+
+\subsection{Arrays}
+Grant et al. \cite{grant_sparse_1996} mentions using Haskell mutable arrays which are implemented using monadic operations. They stress that using a mutable array allows for modifying the array in place (thus saving memory), but it introduces "extra programming difficulties"; i.e. the use of monads makes the code less clear (as is the case in \ref{subs:monads}). 
+
+In our case, since IML is pure, there is no access to mutable arrays.
+
+\subsection{Monadic Operations to Check Size} \label{subs:monads}
+Allows to check for valid matrix sizes when no refinement types are available. Intuitive first representation.
+
+Drawback: introduces a lot of pattern matching, so a lot of split cases which increases the size of the program to check exponentially
+
+Drawback: no optimisation for sparse matrices
+
+\section{Matrix as Functions}
+Imandra implementation; matrices are defined as total functions mapping indices to values.
+Theory of uninterpreted functions.
+
+Woods \cite{wood_vectors_2019} discusses the benefits of implementing matrices as functions in Agda.
+
+\section{Matrix as Maps}
+
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+\bibliographystyle{splncs04}
+\bibliography{MatrixFormalisation}
+
+\end{document}
