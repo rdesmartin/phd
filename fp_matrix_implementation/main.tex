@@ -20,6 +20,16 @@
 %
 \usepackage{listings}
 
+
+\usepackage{comment,cite}
+\usepackage{subcaption} % For subcaptions on subfigures
+\usepackage{wrapfig}
+
+\usepackage{todonotes}
+\newcommand{\knote}[1]{\todo[inline, color=blue!20]{#1}}
+\newcommand{\rnote}[1]{\todo[inline, color=green!20]{#1}}
+
+
 \begin{document}
 %
 \title{Neural Networks in Imandra: Matrix Representation as a Verification Choice\thanks{E.Komendantskaya acknowledges support of EPSRC grant EP/T026952/1.}}
@@ -46,15 +56,184 @@ ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-  The demand for formal verification tools for neural networks (NN) has increased as NNs have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising NNs. Functional programming languages (FPLs) encourage diverse approaches to matrix definitions, which has been explored in different applications.
-  A functional programming language Imandra in addition features a diversity of automated prooff methods.  
-In this paper, we discuss how different implementations of matrices in Imandra influence proof search and automation of NN verification.
+The demand for formal verification tools for neural networks has increased as neural networks have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising neural networks. Functional programming languages  encourage diverse approaches to matrix definitions. This feature has already been successfully exploited in different applications. The question we ask is whether, and how, these ideas can be applied in neural network verification.
+  A functional programming language Imandra combines the syntax of a functional programming language and the power of an automated theorem prover.
+Using these two key features of Imandra, we explore how different implementations of matrices can influence automation of neural network verification.
 
 \keywords{Neural networks  \and Automated reasoning \and Formal verification \and Functional programming \and Imandra.}
 \end{abstract}
 %
 %
 %
+
+\section{Motivation: Matrices in Neural Network Formalisation}
+
+Neural network (NN) verification was pioneered by the
+SMT-solving~\cite{KaBaDiJuKo17Reluplex,HuangKWW17} and an abstract
+interpretation~\cite{SinghGPV19,GeMiDrTsChVe18,AEHW20} communities. However, recently claims have been made that functional programming, too, can be valuable in this domain. 
+ There is a library~\cite{MariaBLFGRG22}
+formalising small rational-valued neural networks in Coq. A more sizeable
+formalisation called MLCert~\cite{BS19} imports neural networks from Python, treats
+floating point numbers as bit vectors, and proves properties describing the
+generalisation bounds for the neural networks.
+%
+An $F^*$ %and \emph{Liquid Haskell}
+%
+formalisation~\cite{KokkeKKAA20} uses $F^*$ reals and
+refinement types for proving robustness of networks trained in Python.
+
+There are several options for defining neural networks in functional programming, ranging from
+defining neurons as record types~\cite{MariaBLFGRG22} to treating them as
+functions with refinement types~\cite{KokkeKKAA20}. But we claim that two general considerations
+should be key to any NN formalisation choice of formalisation. Firstly, we must define neural networks
+as executable functions, because we want to take advantage of simulating/running/executing  them   in
+the functional language of choice. Secondly, a generic approach
+to layer definitions is needed, particularly when we implement convolutional layers.
+We will illusrate these two points and will introduce the syntax of the Imandra programming language~\cite{PassmoreCIABKKM20} by means of an example.
+
+When we say we want to formalise neural networks as functions,
+essentially, we aim to be able to define a NN using just a line of code:
+
+\begin{lstlisting}[caption=Desirable syntax for CNN definition, language=caml, label={lst:model}]
+  let cnn input =
+      layer_0 input >>= layer_1 >>= layer_2 >>= layer_3
+\end{lstlisting}
+
+
+%\subsection{Perceptrons}
+
+%Perceptrons are the simplest form of a neural network; they can classify input linearly separated into categories. They are based on the McCulloch-Pitts model of a neuron, represented in Figure \ref{fig:perceptron}.
+
+%\begin{figure}[ht]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{Figures/perceptron.png}
+%	\rule{35em}{0.5pt}
+%	\caption[Perceptron]{A graph representation of a perceptron. The inputs $(x_1, x_2)$ are combined with the synaptic weights $(w_1, w_2)$ and the bias $b$, the activation function $f$ is then applied on the result}
+%	\label{fig:perceptron}
+%\end{figure}
+
+%In its simplest form,
+
+\textbf{Perceptrons.} To see that a functional approach to neural networks does not necessarily imply generic nature of the code, 
+let us consider an example. 
+A \emph{perceptron}, also known as a \emph{linear classifier}, classifies a given input vector $X = (x_1, ..., x_m)$ into one of two classes $c_1$ or $c_2$ by computing a linear combination of the input vector with a vector of synaptic weights $(w_0, w_1, ..., w_m)$, in which $w_0$ is often called an \emph{intercept} or \emph{bias}: 
+%\begin{equation}
+	$ f(X) = 	\sum_{i=1}^{m}w_ix_i + w_0 $.
+%\end{equation}
+If the result is positive, it classifies the input as $c_1$ and if negative as $c_2$. It effectively divides the input space along a hyperplane defined by
+$\sum_{i=1}^{m}w_ix_i + w_0 = 0$. 
+
+%\begin{example}
+%	Figure \ref{fig:linear_classifier} shows a 2-dimensional input space with 2 classes. In this example, the division hyperplane is the line defined by $y = ax + b$. The perceptron's only weight is a and its bias b.
+%\end{example}
+
+%\begin{figure}[ht]
+%	\centering
+%	\includegraphics[width=1.0\textwidth]{Figures/linear_classifier.png}
+%	\rule{35em}{0.5pt}
+%	\caption[Linear classifier]{The division line of a linear classifier.}
+%	\label{fig:linear_classifier}
+%\end{figure}
+
+In most classification problems, classes are not linearly separated. To handle such problems, we can apply a non-linear function $a$ called an \textit{activation function} to the linear combination of weights and inputs. The resulting definition of a perceptron $f$ is:
+\begin{equation}\label{eq:perceptron}
+	f(X) = a\left(\sum_{i=1}^{m}w_ix_i + w_0\right)
+      \end{equation}
+
+     Let us start with a naive prototype of perceptron in Imandra.  The Iris data set is a ``Hello World'' example in data mining; it represents 3 kinds of Iris flowers using 4 selected features.
+      In Imandra, inputs can be represented as a data type: % \lstinline{iris_input}
+
+\begin{lstlisting}[language=caml]
+type iris_input = {
+  sepal_len: real;
+  sepal_width: real;
+  petal_len: real;
+  petal_width: real;}
+\end{lstlisting}
+
+\begin{comment}
+To process inputs of this type in the future, we can simply define
+
+\begin{lstlisting}[language=caml]
+let process_iris_input (x: iris_input) =
+  let x0 = x.sepal_len in
+  let x1 = x.sepal_width in
+  let x2 = x.petal_len in
+  let x3 = x.petal_width in
+  (x1, x2, x3, x4)
+\end{lstlisting}
+\end{comment}
+
+And we define a perceptron as a function:
+%Finally, we assume we have an access to some trained perceptron that already has appropriate real-valued weights, and we get the following function, as expected:
+
+\begin{lstlisting}[language=caml]
+let layer_0 (w0, w1, w2, w3, w4) (x1, x2, x3, x4) =
+  relu (w0 +. w1 *. x1 +. w2 *. x2 +. w3 *. x3 +. w4 *. x4)
+\end{lstlisting}
+where \lstinline{*.} and   \lstinline{+.} are \emph{times} and \emph{plus} defined on reals.  Note the use of the \lstinline{relu} activation function, which returns $0$ for all negative inputs and acts as the identity function otherwise.
+
+Already in this simple example, one perceptron is not sufficient, as we must map its output to three classes. We use the usual machine learning literature trick and define a further layer of $3$ neurons, each representing one class. Each of these neurons is itself a perceptron, with one incoming weight and one bias. This gives us:
+
+\begin{lstlisting}[language=caml]
+let layer_1 (w1, b1, w2, b2, w3, b3) f1 =
+  let o1 = w1 *. f1 +. b1 in
+  let o2 = w2 *. f1 +. b2 in
+  let o3 = w3 *. f1 +. b3 in
+  (o1, o2, o3)
+
+let process_iris_output (c0, c1, c2) =
+  if (c0 >=. c1) && (c0 >=. c2) then "setosa"
+  else if (c1 >=. c0) && (c1 >=. c2) then "versicolor"
+  else "virginica"
+\end{lstlisting}
+
+\noindent The second function maps the output of the three neurons to the three specified classes. This post-processing stage often takes a
+form of an \emph{argmax} or \emph{softmax} function, which we omit. % the definitions here for simplicity.
+
+And thus the resulting function that defines our neural network model is:
+
+%Suppose the given perceptron weights are\\  \lstinline{let weights_0 = (1.0023211, 1.1538234, -0.30127743, 0.9319558, 2.179688)} and\\
+%\lstinline{let weights_1 = (-2.651993, 0.81521773, -0.83343804,  0.27192873, -0.27463955,  -1.21521)}, in which case this is our resulting function:
+
+\begin{lstlisting}[language=caml]
+let model input = process_iris_input input |> layer_0 weights_0
+                   |> layer_1 weights_1 |> process_iris_output
+\end{lstlisting}
+
+%\textbf{Lessons Learnt.}
+Although our naive formalisation has some features that we desired from the start, i.e.\ it defines a neural network as a composition of functions,
+it is too inflexible to work with arbitrary compositions of layers.
+%The above style of definitions would mean we will need to define all weights in all layers manually, and
+In neural networks with hundreds of weights in every layer this manual approach will quickly become infeasible (as well as error prone).
+So, let us generalise this attempt from the level of individual neurons to the level of matrix operations.
+
+\textbf{Neural Network Layers.}
+%For cases when there are more classes than two, we may want to compose a perceptron with another layer, in which individual neurons represent individual classes, 
+%\subsection{Multi-Layer perceptrons} \label{background_mlp}
+%Fully connected feedforward NNs, also called
+%and the resulting composition would be
+The composition of many perceptrons is often called a \emph{multi-layer perceptron (MLP)}.
+%are the best-known type of deep NNs.
+An MLP consists of an input vector (also called input layer in the literature),
+multiple hidden layers and an output layer, each layer 
+%The hidden layers and the output layer are
+made of perceptrons with weighted connections to the previous layers' outputs. %Each node is perceptron described in the previous section.
+%Each layer's output is a vector of outputs of the individual perceptrons.
+The weight and biases of all the neurons in a layer can be represented by two matrices denoted by $W$ and $B$. By adapting equation \ref{eq:perceptron} to this matrix notation, a layer's output $L$ can be defined as:
+\begin{equation}
+	L(X) = a(X \cdot W + B)
+\end{equation}
+where the operator $\cdot $ denotes the dot product between $X$ and each row of $W$, %i.e. the sum of the products of their corresponding elements,
+$X$ is the layer's input and $a$ is the activation function shared by all nodes in a layer. %To simplify the notation, we will write $XW$ for $X*W$ in the remainder of the paper.
+As the dot product multiplies pointwise all inputs by all weights, such layers are often called \emph{fully-connected}. %We will see in the next section more complex kinds of layers.
+
+%A layer's input is the output of the previous layer.
+By denoting $a_k, W_k, B_k$ --- the activation function, weights and biases of the $k$th layer respectively, an MLP $F$ with $L$ layers is traditionally defined as:
+\begin{equation}
+	F(X) = a_L[B_L + W_L (a_{L-1}(B_{L-1} + W_{L-1}(...(a_1(B_1+W_1\cdot X)))))]
+\end{equation}
+
 \section{Matrix as Lists of Lists}
 \subsection{using Sized Lists or Vectors}
 
