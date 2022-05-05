@@ -22,7 +22,7 @@
 
 \begin{document}
 %
-\title{Survey of Matrix Implementation in Functional Programming Languages\thanks{Supported by organization x.}}
+\title{Neural Networks in Imandra: Matrix Representation as a Verification Choice\thanks{E.Komendantskaya acknowledges support of EPSRC grant EP/T026952/1.}}
 %
 %\titlerunning{Abbreviated paper title}
 % If the paper title is too long for the running head, you can set
@@ -30,8 +30,7 @@
 %
 \author{Remi Desmartin\inst{1} \and
 Grant Passmore\inst{2}\and
-Ekaterina Kommendentskaya\inst{1}\and
-Matthew Daggit\inst{1}}
+Ekaterina Kommendentskaya\inst{1}}
 %
 \authorrunning{R. Desmartin et al.}
 % First names are abbreviated in the running head.
@@ -47,8 +46,9 @@ ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-The demand for formal verification tools for neural networks (NN) has increased as NNs have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising NNs. Functional programming languages (FPLs), are particularly well-suited for automated reasoning tools which can be used for NN verification.
-In this paper, we survey different implementations of matrices in functional programming languages and how they impact the verification.
+  The demand for formal verification tools for neural networks (NN) has increased as NNs have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising NNs. Functional programming languages (FPLs) encourage diverse approaches to matrix definitions, which has been explored in different applications.
+  A functional programming language Imandra in addition features a diversity of automated prooff methods.  
+In this paper, we discuss how different implementations of matrices in Imandra influence proof search and automation of NN verification.
 
 \keywords{Neural networks  \and Automated reasoning \and Formal verification \and Functional programming \and Imandra.}
 \end{abstract}
