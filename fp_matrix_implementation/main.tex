@@ -20,6 +20,31 @@
 %
 \usepackage{listings}
 
+\usepackage[dvipsnames]{xcolor}
+% Setup listing style
+\lstdefinestyle{mystyle} {
+	aboveskip=20pt,
+	keywordstyle=\color{blue},
+	commentstyle=\itshape\color{purple},
+	stringstyle=\color{PineGreen},
+	basicstyle=\ttfamily\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,       
+	%columns=fixed,             
+	keepspaces=true,
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+
+\usepackage{array}
+\newcolumntype{L}{>{\centering\arraybackslash}m{0.14\textwidth}}
+
+\newcolumntype{K}{>{\centering\arraybackslash}m{0.2\textwidth}}
+
 
 \usepackage{comment,cite}
 \usepackage{subcaption} % For subcaptions on subfigures
@@ -247,13 +272,141 @@ By denoting $a_k, W_k, B_k$ --- the activation function, weights and biases of t
      \item  or take advantage of record types, and define matrices as records.  
 \end{enumerate}
 
-The first choice was taken in~\cite{KokkeKKAA20} (in the context of refinement types of F$^*$) and in \cite{grant_sparse_1996} (for sparse matrix encodings in Haskell), the difference between the first and second approaches was
-discussed in~\cite{wood_vectors_2019} (in Agda, but with no neural network application in mind),
-and the third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records there were used to encode individual neurons).
+The first choice was taken in \cite{heras_incidence_2011} (in the context of dependent types in Coq), in ~\cite{KokkeKKAA20} (in the context of refinement types of F$^*$) and in \cite{grant_sparse_1996} (for sparse matrix encodings in Haskell).  The difference between the first and second approaches was
+discussed in~\cite{wood_vectors_2019} (in Agda, but with no neural network application in mind).
+The third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records there were used to encode individual neurons).
+
 In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they make on neural network verification.
 
 
-\section{Related Work}
+\section{Matrices as Lists of Lists}
+We start with re-using  Imandra's  \lstinline{List} library. Lists are defined as inductive data structures.
+\knote{Remi, please give the full definition in Imandra's syntax?}
+
+%And Imandra holds a comprehensive library of list operations, which we re-use in the definitions below.
+We start with defining victors as lists, and matrices as lists of vectors. 
+
+\begin{lstlisting}[frame=none, language=caml]
+type 'a vector = 'a list
+type 'a matrix = 'a vector list 
+\end{lstlisting}
+
+It is possible to extend this formalisation by using dependent~\cite{heras_incidence_2011} or refinement~\cite{KokkeKKAA20} types to check the matrix size. But in Imandra this facility is not directly available, and we will need to use exceptions (monadic operations) to check the matrix sizes.
+
+As there is no built-in type available for matrices equivalent to \lstinline{List} for vectors, the \lstinline{Matrix} module implements a number of functions for basic operations needed throughout the implementation. For instance, \lstinline{map2} takes as inputs a function $f$ and two matrices $A$ and $B$ of the same dimensions and outputs a new matrix $C$ where each element $c_{i,j}$ is the result of $f(a_{i, j}, b_{i, j})$:
+
+\begin{lstlisting}[frame=none, language=caml]
+let rec map2 (f: 'a -> 'b -> 'c) (x: 'a matrix) (y: 'b matrix) = match x with
+	| [] -> (match y with
+		| [] -> Ok []
+		| y::ys  -> Error "map2: invalid list length.")
+	| x::xs -> match y with 
+		| [] -> Error "map2: invalid list length." 
+		| y::ys -> let hd = map2 f x y in
+		let tl = map2 f xs ys in
+		lift2 cons hd tl
+\end{lstlisting}
+
+This implementation allows us to define other useful functions in a concise way. For instance, the dot-product of two matrices, or the $L_0$ distance between two matrices are defined as:
+
+\begin{lstlisting}[frame=none, language=caml]
+let dot_product (a:real matrix) (b:real matrix) =
+	let c = map2 ( *. ) a b in
+	map sum c
+\end{lstlisting}
+
+%\lstinline{column} and \lstinline{nth} help to manipulate functions within matrices by returning a single column of values or a single value with given coordinates. 
+
+
+
+A fully connected layer is then defined as a function \lstinline{fc} that takes
+as parameters an activation function, a 2-dimensional matrix of
+layer's weights and an input vector:
+\begin{lstlisting}[caption=Fully connected layer implementation, language=caml, label={lst:fully_connected}]
+let activation f w i = (* activation func., weights, input *)
+let linear_combination m1 m2 = if (length m1) <> (length m2)
+    then Error "invalid dimensions" 
+    else map sum (Vec.map2 ( *. ) m1 m2) in
+let i' = 1.::i in (* prepend 1. for bias *)
+let z = linear_combination w i' in
+map f z
+	
+let rec fc f (weights:real matrix) (input:real vector) = match weights with
+| [] -> Ok []
+| w::ws -> lift2 cons (activation f w input) (fc f ws input)
+	
+\end{lstlisting} 
+
+Note that each row of the weights matrix
+represents the weights for one of the layer's nodes. The bias for each node is
+the first value of the weights vector, and $1$ is prepended to the input vector
+when computing the linear combination of weights and input to account for that.
+
+
+
+  It is now easy to see that our desired modular approach to composing layers works as stated. We may define the layers using the syntax:
+  \lstinline{let layer_i = fc a weights}, where \lstinline{i} stands for \lstinline{0,1,2,3}, and \lstinline{a} stands for any chosen activation function. 
+
+  Although natural, this formalisation of layers and networks suffers from two problems.  Firstly, it lacks the matrix dimension checks that were readily provided  via refinement types in~\cite{KokkeKKAA20}. This is because Imandra is based on a computational fragment of HOL, and has no refinement or dependent types. To mitigate this, the library we present performs explicit dimension checking via a {\tt result} monad, which clatters the code and adds additional computational checks.
+  Secondly, the matrix definition via the list datatypes makes verification of neural networks very inefficient.
+  This general effect has been already reported in \cite{KokkeKKAA20}, but it may be instructive to look into the problem from the Imandra perspective.
+
+   Robustness of neural networks~\cite{CKDKKAE22} is best amenable to proofs by arithmetic manipulation. This explains the interest of the SMT-solving community in the topic, which started with using Z3 directly~\cite{HuangKWW17}, and has resulted in highly efficient SMT solvers specialised on robustness proofs for neural networks~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.   Imandra's waterfall method~\cite{PassmoreCIABKKM20} defines a default flow for the proof search, which starts with unrolling inductive definitions, simplification and rewriting.
+  As a result, proofs of neural network robustness or proofs as in the ACAS Xu challenge, which should not rely on the matrix size induction,
+  stall in Imandra.
+  %Instead of performing arithmetic operation in the SMT-solver style, they go Imandra takes a false track with analysis of the inductive structure of matrices.   
+  %  unrolling-based~\cite{PassmoreCIABKKM20} proofs of robustness inefficient, as even
+ % accessing matrix elements typically involves unfolding several layers of recursion.
+
+  There is another mode of proofs available in Imandra:  \lstinline{blast}, a tactic for SAT-based symbolic execution modulo
+ higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitely with the appropriate tactic.
+ However, \lstinline{blast} currently does not support real arithmetic. This
+ requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
+ integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
+ However, even with quantisation and the use of Blast, Imandra fails to scale to the Acas Xu challenge, let alone neural networks used in computer vision.
+
+ However, there is a silver lining of this method of matrix formlisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
+archetypes''} for biological neurons. Each archetype is a specialised kind of
+perceptron, in which additional functions are added to amplify or inhibit the
+perceptron's outputs. It is out of scope of this paper to formalise the neuronal
+archetypes in Imandra, but we take methodological insight
+from~\cite{MariaBLFGRG22}. In particular, ~\cite{MariaBLFGRG22} shows that there
+are natural higher-order properties that one may want to verify.
+
+To make a direct comparison, modern neural network
+verifiers~\cite{KaBaDiJuKo17Reluplex,SinghGPV19} deal with verification tasks of
+the form ``given a trained neural network $f$, and a property $P_1$ on its
+inputs, verify that a property $P_2$ holds for $f$'s outputs''. However, the
+formalisation in~\cite{MariaBLFGRG22} considers properties of the form ``any
+neural network $f$ that satisfies a property $Q_1$, also satisfies a property
+$Q_2$.'' Unsurprisingly, the former kind of properties can be resolved by
+simplification and arithmetic, whereas the latter kind requires
+induction on the structure of $f$ (as well as possibly nested induction on
+parameters of $Q_1$).
+
+Another distinguishing consequence of this approach is that it is orthogonal to
+the community competition for scaling proofs to large networks: usually the
+property $Q_1$ does not restrict the size of neural networks, but rather points
+to their structural properties. Thus, implicitly we quantify over neural
+networks of any size.
+
+To emulate a property \emph{\`a la} de Maria et al.,  in~\cite{DPKD22} we  defined a general network monotonicity property: \emph{any fully connected
+network with positive weights is \emph{monotone}, in the sense that, given
+increasing positive inputs, its outputs will also increase}. There has been some
+interest in monotone networks in the literature~\cite{JS98,WehenkelL19}.
+Our experiments in~\cite{DPKD22} show that Imandra can prove such properties by induction on the networks'
+structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks.
+
+\knote{Remi, please check it is true? Anything else needs to be said here?}
+
+
+
+\section{Matrices as Functions}
+
+\section{Matrices as Records}
+
+
+\section{Related Work and Conclusions}
 \subsection{using Sized Lists or Vectors}
 
 Grant et al. (\cite{grant_sparse_1996}) proposes 4 sparse list-based matrix implementations. They use an array-as-trees representation which allows to optimise for sparse arrays (subtrees where all the leafs are 0 are replaced by a 0-leaf).
