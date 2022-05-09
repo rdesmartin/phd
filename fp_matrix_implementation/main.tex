@@ -19,6 +19,7 @@
 %\renewcommand\UrlFont{\color{blue}\rmfamily}
 %
 \usepackage{listings}
+\usepackage{amsfonts} 
 
 \begin{document}
 %
@@ -95,12 +96,30 @@ Drawback: introduces a lot of pattern matching, so a lot of split cases which in
 Drawback: no optimisation for sparse matrices
 
 \section{Matrix as Functions}
+\label{section:functions}
 Imandra implementation; matrices are defined as total functions mapping indices to values.
 Theory of uninterpreted functions.
 
 Woods \cite{wood_vectors_2019} discusses the benefits of implementing matrices as functions in Agda.
 
 \section{Matrix as Maps}
+
+Imandra's functional programming language offers the possibility to use programming language data structures. Among these, it offers access to maps and records. Combining these two data structures allow us to implement matrices in a similar way to Matrices as functions \ref{section:functions} where we map coordinates to values:
+\begin{equation}
+	m : \mathbb{N} \times \mathbb{N} \rightarrow \mathbb{R}
+\end{equation}
+
+In order to encode the matrix's dimensions, we use OCaml's records, which allow us to bundle several values of different types together:
+
+\begin{lstlisting}
+type 'a t = {
+	rows: int;
+	cols: int;
+	vals: ((int*int), 'a) Map.t;
+}
+\end{lstlisting}
+
+As was the case with the implementation as functions, matrices are encoded as total mapping; i.e. a matrix's value at an index where no value has been given is $0$. 
 
 %
 % ---- Bibliography ----
