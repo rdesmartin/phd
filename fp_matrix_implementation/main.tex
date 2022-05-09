@@ -66,7 +66,7 @@ Using these two key features of Imandra, we explore how different implementation
 %
 %
 
-\section{Motivation: Matrices in Neural Network Formalisation}
+\section{Motivation}
 
 Neural network (NN) verification was pioneered by the
 SMT-solving~\cite{KaBaDiJuKo17Reluplex,HuangKWW17} and an abstract
@@ -86,35 +86,40 @@ There are several options for defining neural networks in functional programming
 defining neurons as record types~\cite{MariaBLFGRG22} to treating them as
 functions with refinement types~\cite{KokkeKKAA20}. But we claim that two general considerations
 should be key to any NN formalisation choice of formalisation. Firstly, we must define neural networks
-as executable functions, because we want to take advantage of simulating/running/executing  them   in
+as executable functions, because we want to take advantage of executing  them   in
 the functional language of choice. Secondly, a generic approach
-to layer definitions is needed, particularly when we implement convolutional layers.
-We will illusrate these two points and will introduce the syntax of the Imandra programming language~\cite{PassmoreCIABKKM20} by means of an example.
+to layer definitions is needed, particularly when we implement complex neural network architectures, such as convolutional layers.
 
+These two essential requirements dictate that neural networks are represented as matrices, and that a programmer makes choices about matrix formalisation.
+This extended abstract will explain these choices, and the consequences they imply, from the verification point of view.
+We use Imandra~\cite{PassmoreCIABKKM20} to make these points, because Imandra is a functional programming language with tight integration of automated proving.
+
+Imandra has been
+successful as a user-friendly and scalable tool in the FinTech
+domain~\cite{Passmore21}. The secret of its success lies in combination of the
+best features of functional languages and interactive and automated theorem
+provers. Imandra's logic is based on a pure, higher-order subset of OCaml, and
+functions written in Imandra are at the same time valid OCaml code that can be
+executed, or \emph{``simulated''}. Imandra's mode of interactive proof
+development is based on a typed, higher-order lifting of the \emph{Boyer-Moore
+waterfall}~\cite{BM79} for automated induction, tightly integrated with novel
+techniques for SMT modulo recursive functions.
+
+
+\section{Matrices in Neural Network Formalisation}
+We will illusrate the functional approach to neural network formalisation and will introduce the syntax of the Imandra programming language~\cite{PassmoreCIABKKM20} by means of an example.
 When we say we want to formalise neural networks as functions,
 essentially, we aim to be able to define a NN using just a line of code:
 
-\begin{lstlisting}[caption=Desirable syntax for CNN definition, language=caml, label={lst:model}]
+\begin{lstlisting}[language=caml, label={lst:model}]
   let cnn input =
       layer_0 input >>= layer_1 >>= layer_2 >>= layer_3
 \end{lstlisting}
 
+where each \lstinline?layer_i? is defined in a modular fashion. 
 
-%\subsection{Perceptrons}
 
-%Perceptrons are the simplest form of a neural network; they can classify input linearly separated into categories. They are based on the McCulloch-Pitts model of a neuron, represented in Figure \ref{fig:perceptron}.
-
-%\begin{figure}[ht]
-%	\centering
-%	\includegraphics[width=0.7\textwidth]{Figures/perceptron.png}
-%	\rule{35em}{0.5pt}
-%	\caption[Perceptron]{A graph representation of a perceptron. The inputs $(x_1, x_2)$ are combined with the synaptic weights $(w_1, w_2)$ and the bias $b$, the activation function $f$ is then applied on the result}
-%	\label{fig:perceptron}
-%\end{figure}
-
-%In its simplest form,
-
-\textbf{Perceptrons.} To see that a functional approach to neural networks does not necessarily imply generic nature of the code, 
+ To see that a functional approach to neural networks does not necessarily imply generic nature of the code, 
 let us consider an example. 
 A \emph{perceptron}, also known as a \emph{linear classifier}, classifies a given input vector $X = (x_1, ..., x_m)$ into one of two classes $c_1$ or $c_2$ by computing a linear combination of the input vector with a vector of synaptic weights $(w_0, w_1, ..., w_m)$, in which $w_0$ is often called an \emph{intercept} or \emph{bias}: 
 %\begin{equation}
@@ -197,8 +202,9 @@ And thus the resulting function that defines our neural network model is:
 %\lstinline{let weights_1 = (-2.651993, 0.81521773, -0.83343804,  0.27192873, -0.27463955,  -1.21521)}, in which case this is our resulting function:
 
 \begin{lstlisting}[language=caml]
-let model input = process_iris_input input |> layer_0 weights_0
-                   |> layer_1 weights_1 |> process_iris_output
+let model input = process_iris_input input
+        |> layer_0 weights_0 |> layer_1 weights_1 |>
+                                        process_iris_output
 \end{lstlisting}
 
 %\textbf{Lessons Learnt.}
@@ -208,7 +214,7 @@ it is too inflexible to work with arbitrary compositions of layers.
 In neural networks with hundreds of weights in every layer this manual approach will quickly become infeasible (as well as error prone).
 So, let us generalise this attempt from the level of individual neurons to the level of matrix operations.
 
-\textbf{Neural Network Layers.}
+%\textbf{Neural Network Layers.}
 %For cases when there are more classes than two, we may want to compose a perceptron with another layer, in which individual neurons represent individual classes, 
 %\subsection{Multi-Layer perceptrons} \label{background_mlp}
 %Fully connected feedforward NNs, also called
@@ -232,9 +238,22 @@ As the dot product multiplies pointwise all inputs by all weights, such layers a
 By denoting $a_k, W_k, B_k$ --- the activation function, weights and biases of the $k$th layer respectively, an MLP $F$ with $L$ layers is traditionally defined as:
 \begin{equation}
 	F(X) = a_L[B_L + W_L (a_{L-1}(B_{L-1} + W_{L-1}(...(a_1(B_1+W_1\cdot X)))))]
-\end{equation}
+      \end{equation}
 
-\section{Matrix as Lists of Lists}
+      At this stage, we are firmly committed to using matrices and matrix operations. And we have two key choices:
+\begin{enumerate}
+\item to represent matrices as lists of lists (and take advantage of the inductive data type \lstinline{List}),
+  \item define matrices as functions from pairs to matrix elements,
+     \item  or take advantage of record types, and define matrices as records.  
+\end{enumerate}
+
+The first choice was taken in~\cite{KokkeKKAA20} (in the context of refinement types of F$^*$) and in \cite{grant_sparse_1996} (for sparse matrix encodings in Haskell), the difference between the first and second approaches was
+discussed in~\cite{wood_vectors_2019} (in Agda, but with no neural network application in mind),
+and the third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records there were used to encode individual neurons).
+In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they make on neural network verification.
+
+
+\section{Related Work}
 \subsection{using Sized Lists or Vectors}
 
 Grant et al. (\cite{grant_sparse_1996}) proposes 4 sparse list-based matrix implementations. They use an array-as-trees representation which allows to optimise for sparse arrays (subtrees where all the leafs are 0 are replaced by a 0-leaf).
@@ -273,13 +292,13 @@ Drawback: introduces a lot of pattern matching, so a lot of split cases which in
 
 Drawback: no optimisation for sparse matrices
 
-\section{Matrix as Functions}
+\subsection{Matrix as Functions}
 Imandra implementation; matrices are defined as total functions mapping indices to values.
 Theory of uninterpreted functions.
 
 Woods \cite{wood_vectors_2019} discusses the benefits of implementing matrices as functions in Agda.
 
-\section{Matrix as Maps}
+\subsection{Matrix as Maps}
 
 %
 % ---- Bibliography ----
