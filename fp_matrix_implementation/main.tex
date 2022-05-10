@@ -423,7 +423,7 @@ structure almost automatically (with the help of a handful of auxiliary lemmas).
 
 \section{Matrices as Functions}
 
-We now return to the verification challenge of ACAS Xu, which we failed to conquer with inductive matrix representation of the last section.
+We now return to the verification challenge of ACAS Xu, which we failed to conquer with the inductive matrix representation of the last section.
 This time we ask whether representing matrices as functions and leveraging Imandra's native proof heuristics can help.
 
 With this in mind, we redefine matrices as functions from indices to values, which gives
@@ -452,9 +452,6 @@ total functions, they are defined everywhere (even outside of their stated
 dimensions), and we can make the convention that all matrices we build are valid
 and sparse by construction (with default 0 outside of their dimension bounds).
 
-
-\iffalse
------------------------
 The resulting function definitions are much more succinct than with lists of lists; take for instance \lstinline{map2}:
 
 \begin{lstlisting}[language=caml]
@@ -482,7 +479,8 @@ let fc (f: 'a -> 'b) (weights: 'a Matrix.t) (input: 'a Matrix.t) =
 
 \noindent As the biases are included in the \lstinline|weights| matrix, \lstinline|add_weight_coeff| prepends a column with coefficients $1$ to the input so that they are taken into account.
 
-
+\iffalse
+-----------------------
 
 \noindent The only help Imandra needs to prove this automatically -- are the forward-chaining rules about the $relu$ function:
 
@@ -510,8 +508,6 @@ Now Imandra's engine takes care of the proof automatically  (when we use the tac
 For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original ACAS Xu networks into sparse functional matrix representation.
 For example, layer 5 of one of the networks we used is defined as follows:
 
-\knote{define fc, or say how it is defined}
-
 \begin{lstlisting}[language=caml]
 let layer5 = fc relu (
   function
@@ -527,16 +523,14 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by quantising the networks, as quantisation has the effect of rounding small values to $0$.
-For example, the original network we use here had $13000$ non-zero weights and its quantized version has only $4154$ non-zero weights,
-which gives a reduction in number of network parameters by $\approx$68.05\%. 
+\noindent The sparsity effect is achieved by using an external script to prune the network using weights magnitude as a factor. This method, though naive, is considered a reasonable pruning method \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of network compression techniques in relation to verfication to further studies. 
+
 We do this mainly in order to reduce the amount of computation Imandra needs to perform.
-However, unlike the  \lstinline{[@@blast]} experiment, this code  generically works for any types of values, integer or real.
+However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real. 
+\rnote{some adaptation is needed for real numbers; worth mentioning?}
 
-\knote{I understand this has changed now, Remi, can you correct respectively please?}
-
-With this representation, we are able to repeat the results of Katz et al ~\cite{KaBaDiJuKo17Reluplex} on the quantised networks, which is a big
-improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underling matrix representations.
+With this representation, we are able to repeat the results of Katz et al ~\cite{KaBaDiJuKo17Reluplex} on the pruned networks, which is a big
+improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
 Several factors played a role in automating the proof. Firstly, Imandra being a
@@ -569,7 +563,6 @@ this section were achieved without tuning Imandra's generic proof automation
 strategies, and hopeful that the development of neural-network specific tactics %and the integration of domain-specific tools
 will help Imandra
 scale to such networks in the future.  
-\fi
 
 
 \section{Matrices as Records}
