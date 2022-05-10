@@ -15,8 +15,9 @@
 %
 % If you use the hyperref package, please uncomment the following two lines
 % to display URLs in blue roman font according to Springer's eBook style:
-%\usepackage{color}
-%\renewcommand\UrlFont{\color{blue}\rmfamily}
+\usepackage{hyperref}
+\usepackage{color}
+\renewcommand\UrlFont{\color{blue}\rmfamily}
 %
 \usepackage{listings}
 \usepackage{amsfonts} 
@@ -280,7 +281,7 @@ The third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records th
 In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they make on neural network verification.
 
 
-\section{Matrices as Lists of Lists}
+\section{Matrices as Lists of Lists} \label{sec:lists}
 We start with re-using  Imandra's  \lstinline{List} library. Lists are defined as inductive data structures. The definition used is identical to OCaml's standard library's:
 
 \begin{lstlisting}
@@ -321,7 +322,7 @@ let dot_product (a:real matrix) (b:real matrix): ('a, real matrix) result =
 	Result.map sum (map2 ( *. ) a b)
 \end{lstlisting}
 
-Note that since the output of the function \lstinline{map2} is wrapped in the monadic result type \lstinline{result}, we must use \lstinline{Result.map} to apply \lstinline|sum|. 
+Note that since the output of the function \lstinline{map2} is wrapped in the monadic result type \lstinline{result}, we must use \lstinline{Result.map} to apply \lstinline|sum|. Simlarly, we use standard monadic operations for the \lstinline|result| monad such as \lstinline|bind| or \lstinline|lift|.
 
 %\lstinline{column} and \lstinline{nth} help to manipulate functions within matrices by returning a single column of values or a single value with given coordinates. 
 
@@ -396,20 +397,124 @@ the community competition for scaling proofs to large networks: usually the
 property $Q_1$ does not restrict the size of neural networks, but rather points
 to their structural properties. Thus, implicitly we quantify over neural
 networks of any size.
-\rnote{I'm not sure what is meant in this last sentence.}
 
 To emulate a property \emph{\`a la} de Maria et al.,  in~\cite{DPKD22} we  defined a general network monotonicity property: \emph{any fully connected
 network with positive weights is \emph{monotone}, in the sense that, given
 increasing positive inputs, its outputs will also increase}. There has been some
 interest in monotone networks in the literature~\cite{JS98,WehenkelL19}.
 Our experiments in~\cite{DPKD22} show that Imandra can prove such properties by induction on the networks'
-structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks.
+structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks. Note that for this proof, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.
 
 \knote{Remi, please check it is true? Anything else needs to be said here?}
+\rnote{It is true; I added a sentence clarifying that we do not use the exact same matrix implementation}
+
+\section{Matrices as Functions} \label{sec:functions}
+
+%Similarly to robustness properties, this verification property could be handled by general-purpose SMT solvers. However, as~\cite{KaBaDiJuKo17Reluplex} points out, they do not scale. Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
+%This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJuKo17Reluplex} as an additional heuristic to SMT solver algorithms; \lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
+
+One weakness of the list-of-lists matrix implementation is the use of recursion with error checking in order to access elements. This creates case-splits whose number increases exponentially with the size of matrices. One way of eliminating this recursion and of providing constant-time access to matrix elements is to define matrices as functions from indices to values:
+
+\begin{lstlisting}[language=caml]
+type arg =
+| Rows
+| Cols
+| Value of real * real
+
+type 'a t = arg -> 'a
+
+\end{lstlisting}
+
+Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
+We thus recover some functionality given by refinement types in~\cite{KokkeKKAA20}.  
+
+Furthermore, we can map over a matrix, map2 over a pair of matrices, transpose a
+matrix, construct a diagonal matrix etc.\ without any recursion, since we work
+point-wise on the elements. At the same time, we remove the need for error
+tracking to ensure matrices are of the correct size: because our matrices are
+total functions, they are defined everywhere (even outside of their stated
+dimensions), and we can make the convention that all matrices we build are valid
+and sparse by construction (with default 0 outside of their dimension bounds).
+
+The resulting function definitions are much more succinct than with lists of lists; take for instance \lstinline{map2}:
+
+\begin{lstlisting}[language=caml]
+let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
+	function
+		| Rows -> rows m
+		| Cols -> cols m
+		| Value (i,j) -> f (m (Value (i,j))) (m' (Value (i,j)))
+\end{lstlisting}
+
+\noindent This allows us to define fully-connected layers:
+
+\begin{lstlisting}[language=caml]
+let fc (f: 'a -> 'b) (weights: 'a Matrix.t) (input: 'a Matrix.t) = 
+	let open Matrix in
+	function
+		| Rows         -> 1
+		| Cols         -> rows weights
+		| Value (0, j) -> 
+			let input' = add_weight_coeff input in
+			let weights_row = nth_row weights j in
+			f (dot_product weights_row input')
+		| Value _      -> 0
+\end{lstlisting}
+
+\noindent As the biases are included in the \lstinline|weights| matrix, \lstinline|add_weight_coeff| prepends a column with coefficients $1$ to the input so that they are taken into account.
 
 
+\iffalse
+\noindent The only help Imandra needs to prove this automatically -- are the forward-chaining rules about the $relu$ function:
 
-\section{Matrices as Functions} \label{section:functions}
+
+\begin{lstlisting}[language=caml]
+	lemma relu_pos x =
+	x >= 0 ==> (relu x) [@trigger] = x
+	[@@auto] [@@fc]
+	
+	lemma relu_neg x =
+	x <= 0 ==> (relu x) [@trigger] = 0
+	[@@auto] [@@fc]
+\end{lstlisting}
+
+\noindent And then we disable $relu$ for all of the proofs. This way,
+$relu$ induces no simplification case-splits, while all
+relevant information about $relu$ values is propagated,
+per instance, on demand to our simplification context.
+Now Imandra's engine takes care of the proof automatically  (when we use the tactic \lstinline{[@@auto]}), and takes just under 1.5 minutes.
+\knote{explain better how auto works}
+
+Several factors played a role in automating the proof. Firstly, Imandra being a
+higher-order functional language opened the way for us to experiment with
+alternative matrix representations in the first place. By using maps for the
+large matrices, we eliminate all recursion (and large case-splits) except for
+matrix folds (which now come in only via the dot product), which allowed Imandra
+to expand the recursive matrix computations on demand. 
+%This is a flexibility a purely SMT-solving approach lacks.
+Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
+for real-valued networks was as easy as it would be for integer-valued networks.
+\knote{explain better the point about the theory -- may become clear when auto is better described}
+Finally, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
+Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised. Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
+Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
+Contrast this approach with that of \lstinline{reluplex} which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
+
+% \knote{The text about matrices as functions, and Imandra's clever DAG method comes in here }
+
+Although Imandra's simplifier-based automation above could give us results which
+\lstinline{blast} could not deliver for the same network, it still did not scale
+to the original non-quantised (dense) ACAS Xu network. Contrast this with
+domain-specific verifiers such as Marabou which are able to scale (modulo
+potential floating point imprecision) to the full ACAS Xu.
+%, and indeed to
+%networks an order of magnitude larger.
+We are encouraged that the results of
+this section were achieved without tuning Imandra's generic proof automation
+strategies, and hopeful that the development of neural-network specific tactics %and the integration of domain-specific tools
+will help Imandra
+scale to such networks in the future.  
+\fi
 
 
 \section{Matrices as Records}
