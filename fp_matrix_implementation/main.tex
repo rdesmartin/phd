@@ -296,7 +296,7 @@ type 'a list =
 \end{lstlisting}
 
 
-%And Imandra holds a comprehensive library of list operations, which we re-use in the definitions below.
+Imandra holds a comprehensive library of list operations covering a large part of OCaml's standard \lstinline{List} libary, which we re-use in the definitions below.
 We start with defining vectors as lists, and matrices as lists of vectors. 
 
 \begin{lstlisting}[frame=none, language=caml]
@@ -523,14 +523,14 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by using an external script to prune the network using weights magnitude as a factor. This method, though naive, is considered a reasonable pruning method \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of network compression techniques in relation to verfication to further studies. 
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. We select weight's magnitude to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication to further studies. 
 
-We do this mainly in order to reduce the amount of computation Imandra needs to perform.
-However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real. 
+We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra. However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real. 
 \rnote{some adaptation is needed for real numbers; worth mentioning?}
 
-With this representation, we are able to repeat the results of Katz et al ~\cite{KaBaDiJuKo17Reluplex} on the pruned networks, which is a big
-improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
+
+With this representation, we are able to verify the properties described in Katz et al.~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
+This is a considerable improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
 Several factors played a role in automating the proof. Firstly, Imandra being a
@@ -567,11 +567,9 @@ scale to such networks in the future.
 
 \section{Matrices as Records}
 
-A third implementation of matrices is by using OCaml records, a data structure that allows groups together values of different types. Records are available in Imandra, the only difference with the OCaml implementation is that it does not support function-types for values.
-Records allow us to group a matrix's dimensions and its values. The approach here is similar to the one in {section:functions}: matrices are stored as mappings between indices and values. 
-\begin{equation}
-	m : \mathbb{N} \times \mathbb{N} \rightarrow \mathbb{R}
-\end{equation}
+A third implementation of matrices is by using records, a data structure that groups together values of different types. Standard OCaml records are available in Imandra, though they does not support functions as fields. In addition to records, we use Imandra's implementation of \emph{maps}. 
+
+Records allow us to group a matrix's dimensions and its values. The approach here is similar to the one in {section:functions}: matrices are stored as mappings between indices and values, which allows for constant-time access to its elements.
 
 However, instead of having the mapping be implemented as a function, here we implement it as a Map, i.e. an unorganised collection of of (key;value) pairs where each key is unique. 
 
