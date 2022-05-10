@@ -283,7 +283,7 @@ The first choice was taken in \cite{heras_incidence_2011} (in the context of dep
 discussed in~\cite{wood_vectors_2019} (in Agda, but with no neural network application in mind).
 The third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records there were used to encode individual neurons).
 
-In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they make on neural network verification.
+In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they have on neural network verification.
 
 
 \section{Matrices as Lists of Lists} \label{sec:lists}
@@ -372,8 +372,8 @@ when computing the dot-product of weights and input to account for that.
   %  unrolling-based~\cite{PassmoreCIABKKM20} proofs of robustness inefficient, as even
  % accessing matrix elements typically involves unfolding several layers of recursion.
 
-  There is another mode of proofs available in Imandra:  \lstinline{blast}, a tactic for SAT-based symbolic execution modulo
- higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitely with the appropriate tactic.
+There is another mode of proofs available in Imandra:  \lstinline{blast}, a tactic for SAT-based symbolic execution modulo
+higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitely with the appropriate tactic.
  However, \lstinline{blast} currently does not support real arithmetic. This
  requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
  integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
@@ -385,7 +385,7 @@ This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJu
 \lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
 Connecting Imandra to Marabou may be a promising future direction. 
 
- However, there is a silver lining of this method of matrix formalisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
+However, there is a silver lining of this method of matrix formalisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
 archetypes''} for biological neurons. Each archetype is a specialised kind of
 perceptron, in which additional functions are added to amplify or inhibit the
 perceptron's outputs. It is out of scope of this paper to formalise the neuronal
@@ -414,14 +414,11 @@ To emulate a property \emph{\`a la} de Maria et al.,  in~\cite{DPKD22} we  defin
 network with positive weights is \emph{monotone}, in the sense that, given
 increasing positive inputs, its outputs will also increase}. There has been some
 interest in monotone networks in the literature~\cite{JS98,WehenkelL19}.
-Our experiments in~\cite{DPKD22} show that Imandra can prove such properties by induction on the networks'
-structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks. Note that for this proof, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.
-
-\knote{Remi, please check it is true? Anything else needs to be said here?}
-\rnote{It is correct; I added a sentence clarifying that we do not use the exact same matrix implementation}
+Our experiments show that Imandra can prove such properties by induction on the networks'
+structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks. Note that in these experiments, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.
 
 
-\section{Matrices as Functions}
+\section{Matrices as Functions} \label{sec:function}
 
 We now return to the verification challenge of ACAS Xu, which we failed to conquer with the inductive matrix representation of the last section.
 This time we ask whether representing matrices as functions and leveraging Imandra's native proof heuristics can help.
@@ -430,15 +427,17 @@ With this in mind, we redefine matrices as functions from indices to values, whi
 constant-time (recursion-free) access to matrix elements:
 
 %caption=Matrices as Functions,
-\begin{lstlisting}[ language=caml]
+\begin{lstlisting}[
+	caption=Implementaiton of matrices as functions from indices to values,
+	label={lst:function},
+	language=caml
+	]
 type arg =
   | Rows
   | Cols
   | Value of int * int
 
 type 'a t = arg -> 'a
-
-let nth (m: 'a t) (i: int) (j: int) : 'a = m (Value (i,j))
 \end{lstlisting}
 
 Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
@@ -505,7 +504,7 @@ Now Imandra's engine takes care of the proof automatically  (when we use the tac
 \fi
 
 
-For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original ACAS Xu networks into sparse functional matrix representation.
+For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original networks into sparse functional matrix representation.
 For example, layer 5 of one of the networks we used is defined as follows:
 
 \begin{lstlisting}[language=caml]
@@ -523,14 +522,12 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. We select weight's magnitude to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication to further studies. 
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
 
-We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra. However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real. 
-\rnote{some adaptation is needed for real numbers; worth mentioning?}
-
+We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra. However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
 With this representation, we are able to verify the properties described in Katz et al.~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
-This is a considerable improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
+This is a considerable improvement compared to the previous section, where the implementation did not allow to verify even pruned networks. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
 Several factors played a role in automating the proof. Firstly, Imandra being a
@@ -565,15 +562,26 @@ will help Imandra
 scale to such networks in the future.  
 
 
-\section{Matrices as Records}
+\section{Records and Maps}\label{sec:records}
 
-A third implementation of matrices is by using records, a data structure that groups together values of different types. Standard OCaml records are available in Imandra, though they does not support functions as fields. In addition to records, we use Imandra's implementation of \emph{maps}. 
+The functional implementation given in Listing~\ref{lst:function} has a main limitation: the way it is described, the matrix's value must be of the same type as its dimensions. If defining an integer-valued matrix is easy, this poses a problem for real-valued matrices. Three potential solutions were considered:
+\begin{itemize}
+	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations. The simplicity and efficiency of the functional implementation is lost.
+	\item Define a matrix type with real-valued dimensions and values: this poses the problem of proving the function termination when using matrix dimensions in recursion termination conditions.
+	\item Use \emph{records} to provide polymorphism and allow matrix to use integer dimensions and real values.
+\end{itemize}
 
-Records allow us to group a matrix's dimensions and its values. The approach here is similar to the one in {section:functions}: matrices are stored as mappings between indices and values, which allows for constant-time access to its elements.
+This section focuses on the last two points.
 
-However, instead of having the mapping be implemented as a function, here we implement it as a Map, i.e. an unorganised collection of of (key;value) pairs where each key is unique. 
+\subsection{Proving Termination Over Real Numbers}
 
-\begin{lstlisting}
+\subsection{Records}
+
+Standard OCaml records are available in Imandra, though they does not support functions as fields. They allow to group together values of different type, offering the possibility of polymorphism for our matrix type. 
+
+The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to its elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unorganised collection of (key;value) pairs where each key is unique. 
+
+\begin{lstlisting}[language=caml]
 type 'a t = {
 	rows: int;
 	cols: int;
@@ -581,59 +589,71 @@ type 'a t = {
 }
 \end{lstlisting}
 
-As we want to have a total function in order to avoid having to check for dimensions, we set a default value at 0.
+We can then use a convenient syntax to create a record of this type:
 
-Similarly to the previous implementations, we define a number of useful matrix operations which will allow us to tersely define more complex functions. In order to iterate over matrix values, we use the dimensions and decrease in order to allow Imandra to prove termination. For instance, the 
+\begin{lstlisting}[language=caml]
+let m = {
+	rows = 2;
+	cols = 2;
+	vals = Map.cons 0.
+}
+\end{lstlisting}
+
+Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the \lstinline{map2} function:
+
+\begin{lstlisting}[language=caml]
+let rec map2_rec (m: 'a t) (m': 'b t) (f: 'a -> 'b -> 'c) (cols: int) (i: int) (j: int) (res: ((int*int), 'c) Map.t): ((int*int), 'c) Map.t =
+		let dec i j = 
+			if j <= 0 then (i-1, cols) else (i,j-1)     
+		in
+		if i <= 0 && j <= 0 then (
+			res
+		) else (
+			let (i',j') = dec i j in
+			let new_value = f (nth m (i',j')) (nth m' (i', j')) in
+			let res' = Map.add' res (i',j') new_value in
+			map2_rec m m' f cols i' j' res'
+		)
+[@@adm i,j]
+
+let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t = 
+	let rows = max (m.rows) (m'.rows) in
+	let cols = max (m.cols) (m'.cols) in
+	let vals = map2_rec m m' f cols rows cols (Map.const 0.) in
+	{
+		rows = rows;
+		cols = cols;
+		vals = vals;
+	}
+\end{lstlisting} 
+
+Compared to the lists implementation, this implementation has the benefit of providing constant-time access to a matrix's elements. However, compared to the implementation of matrices as function, it uses recursion to iterate over matrix values which results in a high number of case-split. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
+
+In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation is more preferable.
+
+\iffalse
+\section{Related Work}
+\subsection{Lists}
+Grant et al. \cite{grant_sparse_1996} proposes four list-based matrix implementations in Haskell. The implementation is optimised for sparse lists and matrices, using a definition of lists as binary trees. Its implementation is optimised for time/space of execution rather than having data structures that are convenient for automated reasoning.
 
 
-\section{Related Work and Conclusions}
-\subsection{using Sized Lists or Vectors}
+\subsection{Refinement Types}
+Several implementations of matrices use refined types to specify matrices' dimensions; the validity of matrix operations is checked at compile-time.
+Heras et al.~\cite{heras_incidence_2011} discuss matrix implementation in the Mathcomp Coq library. However, the language lacks Imandra's expressivity to implement neural networks in a concise and clear way.
+Kokke et al.~\cite{kokke_neural_2020} carries out a study of refinement types for NN verification; matrices with dimensions as refinement types are implemented in F* and Liquid Haskell and bindings to Z3, a generic SMT solvers are used to verify properties on neural networks.
 
-Grant et al. (\cite{grant_sparse_1996}) proposes 4 sparse list-based matrix implementations. They use an array-as-trees representation which allows to optimise for sparse arrays (subtrees where all the leafs are 0 are replaced by a 0-leaf).
+\subsection{Functional Implementation}
 
-Binary trees and lists of row-fragments: binary tree array of sparse Vectors defined as \lstinline{[(Int, [Double])]}
-
-A generalised envelope scheme: matrix is cut up in sections
-A quadtree scheme: Triangular matrix is split up in 2 triangular and a rectangular one. 
-A standard quadtree structure is used for the rectangular matrix.
-
-A Two-copy list of row-segments scheme: list of row-segments and list of column-segments in order to iterate over columns easily. Con: 2x more space is used; can be used to improve the 2 first previous methods (quadtree already bidimensional)
-
-Pros of sparse list-based matrix representation: optimised for sparse matrices. Optimised for the specific operation considered in the paper (solving of linear systems of equations using a Cholesky scheme)
-
-%list = inefficient random-access to data
-%array = large storing size for sparse array 
+Woods \cite{wood_vectors_2019} compares matrix implementations as lists and as functions in Agda, but not in the context of NN verification.
+\fi
 
 
-\subsection{Refined Types}
-%
-Coq/Mathcomp/SSReflex: the size of the matrix is defined as a refinement type and used to check that matrix have the appropriate size in multiplications
-Heras et al \cite{heras_incidence_2011} discuss implementation; correctness is checked at compile-time.
-
-This is also used in Starchild/Lazuli \cite{kokke_neural_2020}.
+\section{Conclusions}
+Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrices operations is important.
+We have shown different implementations of matrices and how each implementation influences verification in Imandra; this provides a strong foundation to further develop the Imandra CNN library.
 
 
-\subsection{Arrays}
-Grant et al. \cite{grant_sparse_1996} mentions using Haskell mutable arrays which are implemented using monadic operations. They stress that using a mutable array allows for modifying the array in place (thus saving memory), but it introduces "extra programming difficulties"; i.e. the use of monads makes the code less clear (as is the case in \ref{subs:monads}). 
-
-In our case, since IML is pure, there is no access to mutable arrays.
-
-\subsection{Monadic Operations to Check Size} \label{subs:monads}
-Allows to check for valid matrix sizes when no refinement types are available. Intuitive first representation.
-
-Drawback: introduces a lot of pattern matching, so a lot of split cases which increases the size of the program to check exponentially
-
-Drawback: no optimisation for sparse matrices
-
-\subsection{Matrix as Functions}
-Imandra implementation; matrices are defined as total functions mapping indices to values.
-Theory of uninterpreted functions.
-
-Woods \cite{wood_vectors_2019} discusses the benefits of implementing matrices as functions in Agda.
-
-\subsection{Matrix as Maps}
-
-%
+ %
 % ---- Bibliography ----
 %
 % BibTeX users should specify bibliography style 'splncs04'.
