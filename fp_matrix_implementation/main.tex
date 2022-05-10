@@ -130,6 +130,9 @@ development is based on a typed, higher-order lifting of the \emph{Boyer-Moore
 waterfall}~\cite{BM79} for automated induction, tightly integrated with novel
 techniques for SMT modulo recursive functions.
 
+This paper builds upon a recent development of a NN library in Imandra~\cite{DPKD22}, but
+discusses specifically the matrix representation choices and their consequences.  
+
 
 \section{Matrices in Neural Network Formalisation}
 We will illusrate the functional approach to neural network formalisation and will introduce the syntax of the Imandra programming language~\cite{PassmoreCIABKKM20} by means of an example.
@@ -365,7 +368,13 @@ when computing the linear combination of weights and input to account for that.
  integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
  However, even with quantisation and the use of Blast, Imandra fails to scale to the Acas Xu challenge, let alone neural networks used in computer vision.
 
- However, there is a silver lining of this method of matrix formlisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
+ This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
+%Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
+This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJuKo17Reluplex} as an additional heuristic to SMT solver algorithms;
+\lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
+Connecting Imandra to Marabou may be a promising future direction. 
+
+ However, there is a silver lining of this method of matrix formalisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
 archetypes''} for biological neurons. Each archetype is a specialised kind of
 perceptron, in which additional functions are added to amplify or inhibit the
 perceptron's outputs. It is out of scope of this paper to formalise the neuronal
@@ -402,6 +411,99 @@ structure almost automatically (with the help of a handful of auxiliary lemmas).
 
 
 \section{Matrices as Functions}
+
+We now return to the verification challenge of ACAS Xu, which we failed to conquer with inductive matrix representation of the last section.
+This time we ask whether representing matrices as functions and leveraging Imandra's native proof heuristics can help.
+
+With this in mind, we redefine matrices as functions from indices to values, which gives
+constant-time (recursion-free) access to matrix elements:
+
+%caption=Matrices as Functions,
+\begin{lstlisting}[ language=caml]
+type arg =
+  | Rows
+  | Cols
+  | Value of int * int
+
+type 'a t = arg -> 'a
+
+let nth (m: 'a t) (i: int) (j: int) : 'a = m (Value (i,j))
+\end{lstlisting}
+
+Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
+We thus recover some functionality given by refinement types in~\cite{KokkeKKAA20}.  
+
+Furthermore, we can map over a matrix, map2 over a pair of matrices, transpose a
+matrix, construct a diagonal matrix etc.\ without any recursion, since we work
+point-wise on the elements. At the same time, we remove the need for error
+tracking to ensure matrices are of the correct size: because our matrices are
+total functions, they are defined everywhere (even outside of their stated
+dimensions), and we can make the convention that all matrices we build are valid
+and sparse by construction (with default 0 outside of their dimension bounds).
+
+For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original ACAS Xu networks into sparse functional matrix representation.
+For example, layer 5 of one of the networks we used is defined as follows:
+
+\knote{define fc, or say how it is defined}
+
+\begin{lstlisting}[language=caml]
+let layer5 = fc relu (
+  function
+  | Rows -> 50
+  | Cols -> 51
+  | Value (i,j) -> Map.get (i,j) layer5_map)
+
+let layer5_map =
+  Map.add (0,0) (1) @@
+  Map.add (0,10) (-1) @@
+  Map.add (0,29) (-1) @@
+  ...
+  Map.const 0
+\end{lstlisting}
+
+\noindent The sparsity effect is achieved by quantising the networks, as quantisation has the effect of rounding small values to $0$.
+For example, the original network we use here had $13000$ non-zero weights and its quantized version has only $4154$ non-zero weights,
+which gives a reduction in number of network parameters by $\approx$68.05\%. 
+We do this mainly in order to reduce the amount of computation Imandra needs to perform.
+However, unlike the  \lstinline{[@@blast]} experiment, this code  generically works for any types of values, integer or real.
+
+\knote{I understand this has changed now, Remi, can you correct respectively please?}
+
+With this representation, we are able to repeat the results of Katz et al ~\cite{KaBaDiJuKo17Reluplex} on the quantised networks, which is a big
+improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underling matrix representations.
+
+%This section shows the capability of Imandra as an automated prover for domain-specific verification.
+Several factors played a role in automating the proof. Firstly, Imandra being a
+higher-order functional language opened the way for us to experiment with
+alternative matrix representations in the first place. By using maps for the
+large matrices, we eliminate all recursion (and large case-splits) except for
+matrix folds (which now come in only via the dot product), which allowed Imandra
+to expand the recursive matrix computations on demand. 
+%This is a flexibility a purely SMT-solving approach lacks.
+Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
+for real-valued networks was as easy as it would be for integer-valued networks.
+%\knote{explain better the point about the theory -- may become clear when auto is better described}
+Finally, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
+Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised.
+%Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
+Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
+Contrast this approach with that of \lstinline{reluplex} which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
+
+% \knote{The text about matrices as functions, and Imandra's clever DAG method comes in here }
+
+Although Imandra's simplifier-based automation above could give us results which
+\lstinline{blast} could not deliver for the same network, it still did not scale
+to the original non-quantised (dense) ACAS Xu network. Contrast this with
+domain-specific verifiers such as Marabou which are able to scale (modulo
+potential floating point imprecision) to the full ACAS Xu.
+%, and indeed to
+%networks an order of magnitude larger.
+We are encouraged that the results of
+this section were achieved without tuning Imandra's generic proof automation
+strategies, and hopeful that the development of neural-network specific tactics %and the integration of domain-specific tools
+will help Imandra
+scale to such networks in the future.
+
 
 \section{Matrices as Records}
 
