@@ -73,12 +73,14 @@ Ekaterina Kommendentskaya\inst{1}}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
-\institute{Heriot-Watt University, Edinburgh, UK\and
-Imandra Inc. Austin TX, USA
-\email{lncs@springer.com}\\
-\url{http://www.springer.com/gp/computer-science/lncs} \and
-ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
-\email{\{abc,lncs\}@uni-heidelberg.de}}
+\institute{
+	Heriot-Watt University, Edinburgh, UK
+	\email{\{rhd2000,e.komendantskaya\}@hw.ac.uk}	
+\and
+	Imandra, Austin TX, USA
+	\email{grant@imandra.ai}
+	\url{http://www.imandra.ai}
+}
 %
 \maketitle              % typeset the header of the contribution
 %
@@ -131,6 +133,9 @@ executed, or \emph{``simulated''}. Imandra's mode of interactive proof
 development is based on a typed, higher-order lifting of the \emph{Boyer-Moore
 waterfall}~\cite{BM79} for automated induction, tightly integrated with novel
 techniques for SMT modulo recursive functions.
+
+This paper builds upon a recent development of a NN library in Imandra~\cite{DPKD22}, but
+discusses specifically the matrix representation choices and their consequences.  
 
 
 \section{Matrices in Neural Network Formalisation}
@@ -322,7 +327,7 @@ let dot_product (a:real matrix) (b:real matrix): ('a, real matrix) result =
 	Result.map sum (map2 ( *. ) a b)
 \end{lstlisting}
 
-Note that since the output of the function \lstinline{map2} is wrapped in the monadic result type \lstinline{result}, we must use \lstinline{Result.map} to apply \lstinline|sum|. Simlarly, we use standard monadic operations for the \lstinline|result| monad such as \lstinline|bind| or \lstinline|lift|.
+Note that since the output of the function \lstinline{map2} is wrapped in the monadic \lstinline{result} type, we must use \lstinline{Result.map} to apply \lstinline|sum|. Simlarly, we use standard monadic operations for the \lstinline|result| monad such as \lstinline|bind| or \lstinline|lift|.
 
 %\lstinline{column} and \lstinline{nth} help to manipulate functions within matrices by returning a single column of values or a single value with given coordinates. 
 
@@ -374,7 +379,13 @@ when computing the dot-product of weights and input to account for that.
  integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
  However, even with quantisation and the use of Blast, Imandra fails to scale to the Acas Xu challenge, let alone neural networks used in computer vision.
 
- However, there is a silver lining of this method of matrix formlisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
+ This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
+%Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
+This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJuKo17Reluplex} as an additional heuristic to SMT solver algorithms;
+\lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
+Connecting Imandra to Marabou may be a promising future direction. 
+
+ However, there is a silver lining of this method of matrix formalisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
 archetypes''} for biological neurons. Each archetype is a specialised kind of
 perceptron, in which additional functions are added to amplify or inhibit the
 perceptron's outputs. It is out of scope of this paper to formalise the neuronal
@@ -386,7 +397,8 @@ To make a direct comparison, modern neural network
 verifiers~\cite{KaBaDiJuKo17Reluplex,SinghGPV19} deal with verification tasks of
 the form ``given a trained neural network $f$, and a property $P_1$ on its
 inputs, verify that a property $P_2$ holds for $f$'s outputs''. However, the
-formalisation in~\cite{de_maria_use_2021} considers properties of the form ``any neural network $f$ that satisfies a property $Q_1$, also satisfies a property
+formalisation in~\cite{MariaBLFGRG22} considers properties of the form ``any
+neural network $f$ that satisfies a property $Q_1$, also satisfies a property
 $Q_2$.'' Unsurprisingly, the former kind of properties can be resolved by
 simplification and arithmetic, whereas the latter kind requires
 induction on the structure of $f$ (as well as possibly nested induction on
@@ -406,23 +418,27 @@ Our experiments in~\cite{DPKD22} show that Imandra can prove such properties by 
 structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks. Note that for this proof, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.
 
 \knote{Remi, please check it is true? Anything else needs to be said here?}
-\rnote{It is true; I added a sentence clarifying that we do not use the exact same matrix implementation}
+\rnote{It is correct; I added a sentence clarifying that we do not use the exact same matrix implementation}
 
-\section{Matrices as Functions} \label{sec:functions}
 
-%Similarly to robustness properties, this verification property could be handled by general-purpose SMT solvers. However, as~\cite{KaBaDiJuKo17Reluplex} points out, they do not scale. Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
-%This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJuKo17Reluplex} as an additional heuristic to SMT solver algorithms; \lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
+\section{Matrices as Functions}
 
-One weakness of the list-of-lists matrix implementation is the use of recursion with error checking in order to access elements. This creates case-splits whose number increases exponentially with the size of matrices. One way of eliminating this recursion and of providing constant-time access to matrix elements is to define matrices as functions from indices to values:
+We now return to the verification challenge of ACAS Xu, which we failed to conquer with inductive matrix representation of the last section.
+This time we ask whether representing matrices as functions and leveraging Imandra's native proof heuristics can help.
 
-\begin{lstlisting}[language=caml]
+With this in mind, we redefine matrices as functions from indices to values, which gives
+constant-time (recursion-free) access to matrix elements:
+
+%caption=Matrices as Functions,
+\begin{lstlisting}[ language=caml]
 type arg =
-| Rows
-| Cols
-| Value of real * real
+  | Rows
+  | Cols
+  | Value of int * int
 
 type 'a t = arg -> 'a
 
+let nth (m: 'a t) (i: int) (j: int) : 'a = m (Value (i,j))
 \end{lstlisting}
 
 Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
@@ -436,6 +452,9 @@ total functions, they are defined everywhere (even outside of their stated
 dimensions), and we can make the convention that all matrices we build are valid
 and sparse by construction (with default 0 outside of their dimension bounds).
 
+
+\iffalse
+-----------------------
 The resulting function definitions are much more succinct than with lists of lists; take for instance \lstinline{map2}:
 
 \begin{lstlisting}[language=caml]
@@ -464,7 +483,7 @@ let fc (f: 'a -> 'b) (weights: 'a Matrix.t) (input: 'a Matrix.t) =
 \noindent As the biases are included in the \lstinline|weights| matrix, \lstinline|add_weight_coeff| prepends a column with coefficients $1$ to the input so that they are taken into account.
 
 
-\iffalse
+
 \noindent The only help Imandra needs to prove this automatically -- are the forward-chaining rules about the $relu$ function:
 
 
@@ -484,7 +503,42 @@ relevant information about $relu$ values is propagated,
 per instance, on demand to our simplification context.
 Now Imandra's engine takes care of the proof automatically  (when we use the tactic \lstinline{[@@auto]}), and takes just under 1.5 minutes.
 \knote{explain better how auto works}
+----------------------
+\fi
 
+
+For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original ACAS Xu networks into sparse functional matrix representation.
+For example, layer 5 of one of the networks we used is defined as follows:
+
+\knote{define fc, or say how it is defined}
+
+\begin{lstlisting}[language=caml]
+let layer5 = fc relu (
+  function
+  | Rows -> 50
+  | Cols -> 51
+  | Value (i,j) -> Map.get (i,j) layer5_map)
+
+let layer5_map =
+  Map.add (0,0) (1) @@
+  Map.add (0,10) (-1) @@
+  Map.add (0,29) (-1) @@
+  ...
+  Map.const 0
+\end{lstlisting}
+
+\noindent The sparsity effect is achieved by quantising the networks, as quantisation has the effect of rounding small values to $0$.
+For example, the original network we use here had $13000$ non-zero weights and its quantized version has only $4154$ non-zero weights,
+which gives a reduction in number of network parameters by $\approx$68.05\%. 
+We do this mainly in order to reduce the amount of computation Imandra needs to perform.
+However, unlike the  \lstinline{[@@blast]} experiment, this code  generically works for any types of values, integer or real.
+
+\knote{I understand this has changed now, Remi, can you correct respectively please?}
+
+With this representation, we are able to repeat the results of Katz et al ~\cite{KaBaDiJuKo17Reluplex} on the quantised networks, which is a big
+improvement compared to the previous section. It is especially impressive that it comes ``for free'' with simply changing the underling matrix representations.
+
+%This section shows the capability of Imandra as an automated prover for domain-specific verification.
 Several factors played a role in automating the proof. Firstly, Imandra being a
 higher-order functional language opened the way for us to experiment with
 alternative matrix representations in the first place. By using maps for the
@@ -494,9 +548,10 @@ to expand the recursive matrix computations on demand.
 %This is a flexibility a purely SMT-solving approach lacks.
 Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
 for real-valued networks was as easy as it would be for integer-valued networks.
-\knote{explain better the point about the theory -- may become clear when auto is better described}
+%\knote{explain better the point about the theory -- may become clear when auto is better described}
 Finally, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
-Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised. Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
+Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised.
+%Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
 Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
 Contrast this approach with that of \lstinline{reluplex} which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
 
