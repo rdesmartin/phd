@@ -522,7 +522,7 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1990}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
 
 We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra. However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
@@ -575,9 +575,12 @@ This section focuses on the last two points.
 
 \subsection{Proving Termination Over Real Numbers}
 
+And for that section, I really can't write much on the implementation detail as I'm still trying to understand parts of it. So if Grant finds the time to write it, good, otherwise can we sweep it under the rug in an honest way? i.e. we give a high-level explaination (we need a floor function to go from reals to integers in order to prove termination) but say we won't go into detail of this proof here?
+
+
 \subsection{Records}
 
-Standard OCaml records are available in Imandra, though they does not support functions as fields. They allow to group together values of different type, offering the possibility of polymorphism for our matrix type. 
+Standard OCaml records are available in Imandra, though they does not support functions as fields. They are a specific group of algebraic data types that allow to group together values of different types, offering the possibility of polymorphism for our matrix type. 
 
 The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to its elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unorganised collection of (key;value) pairs where each key is unique. 
 
@@ -599,9 +602,9 @@ let m = {
 }
 \end{lstlisting}
 
-Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the \lstinline{map2} function:
+Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the definition for the \lstinline{map2} function is given in Listing~\ref{lst:map2_records}.
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}[language=caml, label={lst:map2_records}, caption=Map2 implementation]
 let rec map2_rec (m: 'a t) (m': 'b t) (f: 'a -> 'b -> 'c) (cols: int) (i: int) (j: int) (res: ((int*int), 'c) Map.t): ((int*int), 'c) Map.t =
 		let dec i j = 
 			if j <= 0 then (i-1, cols) else (i,j-1)     
