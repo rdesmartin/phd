@@ -590,9 +590,9 @@ And for that section, I really can't write much on the implementation detail as 
 
 \subsection{Records}
 
-Standard OCaml records are available in Imandra, though they does not support functions as fields. They are a specific group of algebraic data types that allow to group together values of different types, offering the possibility of polymorphism for our matrix type. 
+Standard OCaml records are available in Imandra, though they do not support functions as fields. They are a specific group of algebraic data types that allow to group together values of different types, offering the possibility of polymorphism for our matrix type. 
 
-The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to its elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unorganised collection of (key;value) pairs where each key is unique. 
+The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to the elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unordered collection of (key;value) pairs where each key is unique. 
 
 \begin{lstlisting}[language=caml]
 type 'a t = {
@@ -602,6 +602,7 @@ type 'a t = {
 }
 \end{lstlisting}
 
+\knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
 We can then use a convenient syntax to create a record of this type:
 
 \begin{lstlisting}[language=caml]
@@ -611,6 +612,9 @@ let m = {
 	vals = Map.cons 0.
 }
 \end{lstlisting}
+
+\knote{Why 0, precisely? to have a matrix of zeros? please explain the motivation for this example.
+  This could be a good moment to emphasise that indices are integers and values are reals, so can we add a comment, and may be have some meaningful real there?}
 
 Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the definition for the \lstinline{map2} function is given in Listing~\ref{lst:map2_records}.
 
@@ -640,7 +644,7 @@ let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 	}
 \end{lstlisting} 
 
-Compared to the lists implementation, this implementation has the benefit of providing constant-time access to a matrix's elements. However, compared to the implementation of matrices as function, it uses recursion to iterate over matrix values which results in a high number of case-split. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
+Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-split. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
 
 In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation is more preferable.
 
