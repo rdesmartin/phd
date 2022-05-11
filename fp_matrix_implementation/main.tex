@@ -522,25 +522,30 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}. For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
-
-We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra. However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}.
+%For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
+%
+We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra.
+%However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
 With this representation, we are able to verify the properties described in Katz et al.~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
 This is a considerable improvement compared to the previous section, where the implementation did not allow to verify even pruned networks. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
-Several factors played a role in automating the proof. Firstly, Imandra being a
-higher-order functional language opened the way for us to experiment with
-alternative matrix representations in the first place. By using maps for the
+Several factors played a role in automating the proof.
+%Firstly, Imandra being a
+%higher-order functional language opened the way for us to experiment with
+%alternative matrix representations in the first place.
+Firstly, by using maps for the
 large matrices, we eliminate all recursion (and large case-splits) except for
 matrix folds (which now come in only via the dot product), which allowed Imandra
-to expand the recursive matrix computations on demand. 
+to expand the recursive matrix computations on demand.
+\knote{is this a good place to say something about connection between maps and the way SMT treats them?}
 %This is a flexibility a purely SMT-solving approach lacks.
-Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
-for real-valued networks was as easy as it would be for integer-valued networks.
+%Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
+%for real-valued networks was as easy as it would be for integer-valued networks.
 %\knote{explain better the point about the theory -- may become clear when auto is better described}
-Finally, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
+Secondly, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
 Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised.
 %Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
 Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
