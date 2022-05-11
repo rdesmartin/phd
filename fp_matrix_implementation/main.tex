@@ -567,9 +567,14 @@ will help Imandra
 scale to such networks in the future.  
 
 
-\section{Records and Maps}\label{sec:records}
+\section{Real-valued Matrices; Records  and Arrays}\label{sec:records}
 
-The functional implementation given in Listing~\ref{lst:function} has a main limitation: the way it is described, the matrix's value must be of the same type as its dimensions. If defining an integer-valued matrix is easy, this poses a problem for real-valued matrices. Three potential solutions were considered:
+It is time we turn to the question of encorporating real values into matrices. Section~\ref{sec:lists} defined matrices as lists of lists; and that definition in principle worked for both interger and real valued matrices. However, we could not use \lstinline{[@@blast]} to automate proofs when real values were involved; this meant we were restrcted to verifying just integer valued networks. On the other hand, matrices as functions implementation extends to proofs with real valued matrices, however it is not a trivial extension.   
+In the functional implementation given in Listing~\ref{lst:function}  the matrix's value must be of the same type as its dimensions. If defining an integer-valued matrix is easy, this poses a problem for real-valued matrices.
+
+\knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
+
+To simplify the code and the proofs, three potential solutions were considered:
 \begin{itemize}
 	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations. The simplicity and efficiency of the functional implementation is lost.
 	\item Define a matrix type with real-valued dimensions and values: this poses the problem of proving the function termination when using matrix dimensions in recursion termination conditions.
