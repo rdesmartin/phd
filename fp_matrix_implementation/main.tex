@@ -85,9 +85,17 @@ Ekaterina Kommendentskaya\inst{1}}
 \maketitle              % typeset the header of the contribution
 %
 \begin{abstract}
-The demand for formal verification tools for neural networks has increased as neural networks have been deployed in a growing number of safety-critical applications. Matrices are a data structure essential to formalising neural networks. Functional programming languages  encourage diverse approaches to matrix definitions. This feature has already been successfully exploited in different applications. The question we ask is whether, and how, these ideas can be applied in neural network verification.
-  A functional programming language Imandra combines the syntax of a functional programming language and the power of an automated theorem prover.
-Using these two key features of Imandra, we explore how different implementations of matrices can influence automation of neural network verification.
+The demand for formal verification tools for neural networks has increased as
+neural networks have been deployed in a growing number of safety-critical
+applications. Matrices are a data structure essential to formalising neural
+networks. Functional programming languages encourage diverse approaches to
+matrix definitions. This feature has already been successfully exploited in
+different applications. The question we ask is whether, and how, these ideas can
+be applied in neural network verification. A functional programming language
+Imandra combines the syntax of a functional programming language and the power
+of an automated theorem prover. Using these two key features of Imandra, we
+explore how different implementations of matrices can influence automation of
+neural network verification.
 
 \keywords{Neural networks  \and Automated reasoning \and Formal verification \and Functional programming \and Imandra.}
 \end{abstract}
@@ -111,37 +119,43 @@ An $F^*$ %and \emph{Liquid Haskell}
 formalisation~\cite{KokkeKKAA20} uses $F^*$ reals and
 refinement types for proving robustness of networks trained in Python.
 
-There are several options for defining neural networks in functional programming, ranging from
-defining neurons as record types~\cite{MariaBLFGRG22} to treating them as
-functions with refinement types~\cite{KokkeKKAA20}. But we claim that two general considerations
-should be key to any NN formalisation choice of formalisation. Firstly, we must define neural networks
-as executable functions, because we want to take advantage of executing  them   in
-the functional language of choice. Secondly, a generic approach
-to layer definitions is needed, particularly when we implement complex neural network architectures, such as convolutional layers.
+There are several options for defining neural networks in functional
+programming, ranging from defining neurons as record types~\cite{MariaBLFGRG22}
+to treating them as functions with refinement types~\cite{KokkeKKAA20}. But we
+claim that two general considerations should be key to any NN formalisation
+choice of formalisation. Firstly, we must define neural networks as executable
+functions, because we want to take advantage of executing them in the functional
+language of choice. Secondly, a generic approach to layer definitions is needed,
+particularly when we implement complex neural network architectures, such as
+convolutional layers.
 
-These two essential requirements dictate that neural networks are represented as matrices, and that a programmer makes choices about matrix formalisation.
-This extended abstract will explain these choices, and the consequences they imply, from the verification point of view.
-We use Imandra~\cite{PassmoreCIABKKM20} to make these points, because Imandra is a functional programming language with tight integration of automated proving.
+These two essential requirements dictate that neural networks are represented as
+matrices, and that a programmer makes choices about matrix formalisation. This
+extended abstract will explain these choices, and the consequences they imply,
+from the verification point of view. We use Imandra~\cite{PassmoreCIABKKM20} to
+make these points, because Imandra is a functional programming language with
+tight integration of automated proving.
 
-Imandra has been
-successful as a user-friendly and scalable tool in the FinTech
-domain~\cite{Passmore21}. The secret of its success lies in combination of the
-best features of functional languages and interactive and automated theorem
-provers. Imandra's logic is based on a pure, higher-order subset of OCaml, and
-functions written in Imandra are at the same time valid OCaml code that can be
-executed, or \emph{``simulated''}. Imandra's mode of interactive proof
-development is based on a typed, higher-order lifting of the \emph{Boyer-Moore
-waterfall}~\cite{BM79} for automated induction, tightly integrated with novel
-techniques for SMT modulo recursive functions.
+Imandra has been successful as a user-friendly and scalable tool in the FinTech
+domain~\cite{Passmore21}. The secret of its success lies in a combination of
+many of the best features of functional languages and interactive and automated
+theorem provers. Imandra's logic is based on a pure, higher-order subset of
+OCaml, and functions written in Imandra are at the same time valid OCaml code
+that can be executed, or \emph{``simulated''}. Imandra's mode of interactive
+proof development is based on a typed, higher-order lifting of the
+\emph{Boyer-Moore waterfall}~\cite{BM79} for automated induction, tightly
+integrated with novel techniques for SMT modulo recursive functions.
 
 This paper builds upon a recent development of a NN library in Imandra~\cite{DPKD22}, but
 discusses specifically the matrix representation choices and their consequences.  
 
 
 \section{Matrices in Neural Network Formalisation}
-We will illusrate the functional approach to neural network formalisation and will introduce the syntax of the Imandra programming language~\cite{PassmoreCIABKKM20} by means of an example.
-When we say we want to formalise neural networks as functions,
-essentially, we aim to be able to define a NN using just a line of code:
+We will illusrate the functional approach to neural network formalisation and
+will introduce the syntax of the Imandra programming
+language~\cite{PassmoreCIABKKM20} by means of an example. When we say we want to
+formalise neural networks as functions, essentially, we aim to be able to define
+a NN using just a line of code:
 
 \begin{lstlisting}[language=caml, label={lst:model}]
   let cnn input =
@@ -275,8 +289,8 @@ By denoting $a_k, W_k, B_k$ --- the activation function, weights and biases of t
       At this stage, we are firmly committed to using matrices and matrix operations. And we have two key choices:
 \begin{enumerate}
 \item to represent matrices as lists of lists (and take advantage of the inductive data type \lstinline{List}),
-  \item define matrices as functions from indices to matrix elements,
-     \item  or take advantage of record types, and define matrices as records.  
+\item define matrices as functions from indices to matrix elements,
+\item or take advantage of record types, and define matrices as records with maps.  
 \end{enumerate}
 
 The first choice was taken in \cite{heras_incidence_2011} (in the context of dependent types in Coq), in ~\cite{KokkeKKAA20} (in the context of refinement types of F$^*$) and in \cite{grant_sparse_1996} (for sparse matrix encodings in Haskell).  The difference between the first and second approaches was
@@ -292,7 +306,7 @@ We start with re-using  Imandra's  \lstinline{List} library. Lists are defined a
 \begin{lstlisting}
 type 'a list =
 | []
-| :: of 'a * 'a list
+| (::) of 'a * 'a list
 \end{lstlisting}
 
 
@@ -304,20 +318,21 @@ type 'a vector = 'a list
 type 'a matrix = 'a vector list 
 \end{lstlisting}
 
-It is possible to extend this formalisation by using dependent~\cite{heras_incidence_2011} or refinement~\cite{KokkeKKAA20} types to check the matrix size, e.g. when performing matrix multiplication. But in Imandra this facility is not directly available, and we will need to use errors (implemented as a monadic type) to check the matrix sizes.
+It is possible to extend this formalisation by using dependent~\cite{heras_incidence_2011} or refinement~\cite{KokkeKKAA20} types to check the matrix size, e.g. when performing matrix multiplication. But in Imandra this facility is not directly available, and we will need to use error-tracking (implemented via the monadic \lstinline{Result} type) to facilitate checking of the matrix sizes.
 
 As there is no built-in type available for matrices equivalent to \lstinline{List} for vectors, the \lstinline{Matrix} module implements a number of functions for basic operations needed throughout the implementation. For instance, \lstinline{map2} takes as inputs a function $f$ and two matrices $A$ and $B$ of the same dimensions and outputs a new matrix $C$ where each element $c_{i,j}$ is the result of $f(a_{i, j}, b_{i, j})$:
 
 \begin{lstlisting}[frame=none, language=caml]
-let rec map2 (f: 'a -> 'b -> 'c) (x: 'a matrix) (y: 'b matrix) = match x with
-	| [] -> (match y with
-		| [] -> Ok []
-		| y::ys  -> Error "map2: invalid list length.")
-	| x::xs -> match y with 
-		| [] -> Error "map2: invalid list length." 
-		| y::ys -> let hd = map2 f x y in
-		let tl = map2 f xs ys in
-		lift2 cons hd tl
+  let rec map2 (f:'a -> 'b -> 'c) (x:'a matrix) (y:'b matrix) =
+    match x with
+	  | [] -> begin match y with
+   		      | [] -> Ok []
+		        | y::ys  -> Error "map2: invalid length." end
+ 	  | x::xs -> begin match y with 
+  		         | [] -> Error "map2: invalid length." 
+		           | y::ys -> let hd = map2 f x y in
+		                      let tl = map2 f xs ys in
+		                      lift2 cons hd tl end
 \end{lstlisting}
 
 This implementation allows us to define other useful functions in a concise way. For instance, the dot-product of two matrices, or the $L_0$ distance between two matrices are defined as:
@@ -338,18 +353,18 @@ as parameters an activation function, a 2-dimensional matrix of
 layer's weights and an input vector:
 \begin{lstlisting}[caption=Fully connected layer implementation, language=caml, label={lst:fully_connected}]
 let activation f w i = (* activation func., weights, input *)
-let linear_combination m1 m2 = if (length m1) <> (length m2)
-    then Error "invalid dimensions" 
-    else map sum (Vec.map2 ( *. ) m1 m2) in
-let i' = 1.::i in (* prepend 1. for bias *)
-let z = linear_combination w i' in
-map f z
+ let linear_combination m1 m2 = if (length m1) <> (length m2)
+     then Error "invalid dimensions" 
+     else map sum (Vec.map2 ( *. ) m1 m2) in
+ let i' = 1.::i in (* prepend 1. for bias *)
+ let z = linear_combination w i' in
+ map f z
 	
-let rec fc f (weights:real matrix) (input:real vector) = match weights with
-| [] -> Ok []
-| w::ws -> lift2 cons (activation f w input) (fc f ws input)
-	
-\end{lstlisting} 
+let rec fc f (weights:real matrix) (input:real vector) =
+ match weights with
+ | [] -> Ok []
+ | w::ws -> lift2 cons (activation f w input) (fc f ws input)
+\end{lstlisting}
 
 Note that each row of the weights matrix
 represents the weights for one of the layer's nodes. The bias for each node is
@@ -366,18 +381,18 @@ when computing the dot-product of weights and input to account for that.
   This general effect has been already reported in \cite{KokkeKKAA20}, but it may be instructive to look into the problem from the Imandra perspective.
 
    Robustness of neural networks~\cite{CKDKKAE22} is best amenable to proofs by arithmetic manipulation. This explains the interest of the SMT-solving community in the topic, which started with using Z3 directly~\cite{HuangKWW17}, and has resulted in highly efficient SMT solvers specialised on robustness proofs for neural networks~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.   Imandra's waterfall method~\cite{PassmoreCIABKKM20} defines a default flow for the proof search, which starts with unrolling inductive definitions, simplification and rewriting.
-  As a result, proofs of neural network robustness or proofs as in the ACAS Xu challenge, which should not rely on the matrix size induction,
-  stall in Imandra.
+  As a result, proofs of neural network robustness or proofs as in the ACAS Xu challenge, which do not actually need induction,
+  are not efficiently tackled using Imandra's inductive waterfall.
   %Instead of performing arithmetic operation in the SMT-solver style, they go Imandra takes a false track with analysis of the inductive structure of matrices.   
   %  unrolling-based~\cite{PassmoreCIABKKM20} proofs of robustness inefficient, as even
  % accessing matrix elements typically involves unfolding several layers of recursion.
 
-There is another mode of proofs available in Imandra:  \lstinline{blast}, a tactic for SAT-based symbolic execution modulo
-higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitely with the appropriate tactic.
+There is another verification approach available in Imandra which is better suited for this type of problem:  \lstinline{blast}, a tactic for SAT-based symbolic execution modulo
+higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitly to discharge an Imandra verification goal.
  However, \lstinline{blast} currently does not support real arithmetic. This
  requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
  integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
- However, even with quantisation and the use of Blast, Imandra fails to scale to the Acas Xu challenge, let alone neural networks used in computer vision.
+ However, even with quantisation and the use of Blast, while we succeed on many smaller benchmarks, Imandra fails to scale `out of the box' to the ACAS Xu challenge, let alone larger neural networks used in computer vision.
 
  This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
 %Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
@@ -385,11 +400,14 @@ This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJu
 \lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
 Connecting Imandra to Marabou may be a promising future direction. 
 
-However, there is a silver lining of this method of matrix formalisation.  When we formulate verification properties that genuinely require induction, formalisation of matrices as lists does result in more natural, and easily automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise in Coq \emph{``neuronal
-archetypes''} for biological neurons. Each archetype is a specialised kind of
-perceptron, in which additional functions are added to amplify or inhibit the
-perceptron's outputs. It is out of scope of this paper to formalise the neuronal
-archetypes in Imandra, but we take methodological insight
+However, there is a silver lining of this method of matrix formalisation. When
+we formulate verification properties that genuinely require induction,
+formalisation of matrices as lists does result in more natural, and easily
+automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise
+in Coq \emph{``neuronal archetypes''} for biological neurons. Each archetype is
+a specialised kind of perceptron, in which additional functions are added to
+amplify or inhibit the perceptron's outputs. It is out of scope of this paper to
+formalise the neuronal archetypes in Imandra, but we take methodological insight
 from~\cite{MariaBLFGRG22}. In particular, ~\cite{MariaBLFGRG22} shows that there
 are natural higher-order properties that one may want to verify.
 
@@ -420,8 +438,10 @@ structure almost automatically (with the help of a handful of auxiliary lemmas).
 
 \section{Matrices as Functions} \label{sec:function}
 
-We now return to the verification challenge of ACAS Xu, which we failed to conquer with the inductive matrix representation of the last section.
-This time we ask whether representing matrices as functions and leveraging Imandra's native proof heuristics can help.
+We now return to the verification challenge of ACAS Xu, which we failed to
+conquer with the inductive matrix representation of the last section. This time
+we ask whether representing matrices as functions and leveraging Imandra's
+default proof automation can help.
 
 With this in mind, we redefine matrices as functions from indices to values, which gives
 constant-time (recursion-free) access to matrix elements:
@@ -443,7 +463,7 @@ type 'a t = arg -> 'a
 Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
 We thus recover some functionality given by refinement types in~\cite{KokkeKKAA20}.  
 
-Furthermore, we can map over a matrix, map2 over a pair of matrices, transpose a
+Furthermore, we can map over a matrix, \lstinline{map2} over a pair of matrices, transpose a
 matrix, construct a diagonal matrix etc.\ without any recursion, since we work
 point-wise on the elements. At the same time, we remove the need for error
 tracking to ensure matrices are of the correct size: because our matrices are
@@ -540,13 +560,18 @@ Firstly, by using maps for the
 large matrices, we eliminate all recursion (and large case-splits) except for
 matrix folds (which now come in only via the dot product), which allowed Imandra
 to expand the recursive matrix computations on demand.
-\knote{is this a good place to say something about connection between maps and the way SMT treats them?}
+%\knote{is this a good place to say something about connection between maps and the way SMT treats them?}
 %This is a flexibility a purely SMT-solving approach lacks.
 %Secondly, we did not have to rely on a ``theory'' of integer or real arithmetic as SMT solvers do; and therefore encoding this verification challenge
 %for real-valued networks was as easy as it would be for integer-valued networks.
 %\knote{explain better the point about the theory -- may become clear when auto is better described}
-Secondly, Imandra's native simplifier contributed to the success. It works on a DAG representation of terms and speculatively expands instances of recursive functions, only as they are (heuristically seen to be) needed.
-Incremental congruence closure and simplex data structures are shared across DAG nodes, and symbolic execution results are memoised.
+Secondly, Imandra's native simplifier contributed to the success. It works on a
+DAG representation of terms and speculatively expands instances of recursive
+functions, only as they are (heuristically seen to be) needed. Incremental
+congruence closure and simplex data structures are shared across DAG nodes, and
+symbolic execution results are memoised. The underlying \lstinline{Map.t}
+components of the functions are reasoned about using a decision procedure for
+the theory of arrays.
 %Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
 Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
 Contrast this approach with that of \lstinline{reluplex} which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
@@ -569,8 +594,18 @@ scale to such networks in the future.
 
 \section{Real-valued Matrices; Records  and Arrays}\label{sec:records}
 
-It is time we turn to the question of encorporating real values into matrices. Section~\ref{sec:lists} defined matrices as lists of lists; and that definition in principle worked for both interger and real valued matrices. However, we could not use \lstinline{[@@blast]} to automate proofs when real values were involved; this meant we were restrcted to verifying just integer valued networks. On the other hand, matrices as functions implementation extends to proofs with real valued matrices, however it is not a trivial extension.   
-In the functional implementation given in Listing~\ref{lst:function}  the matrix's value must be of the same type as its dimensions. If defining an integer-valued matrix is easy, this poses a problem for real-valued matrices.
+It is time we turn to the question of incorporating real values into matrices.
+Section~\ref{sec:lists} defined matrices as lists of lists; and that definition
+in principle worked for both integer and real valued matrices. However, we could
+not use \lstinline{[@@blast]} to automate proofs when real values were involved;
+this meant we were restricted to verifying integer-valued networks. On the
+other hand, the matrices as functions implementation extends to proofs with real
+valued matrices, however it is not a trivial extension. In the functional
+implementation given in Listing~\ref{lst:function} the matrix's value must be of
+the same type as its dimensions. Thus, if the matrix elements are real-valued, then
+in this representation the matrix dimensions will be real-valued as well. This,
+it turns out, is not trivial to deal with for functions which do recursion along
+matrix dimensions.
 
 \knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
 
@@ -585,7 +620,7 @@ This section focuses on these three alternatives.
 
 \subsection{Extending the Functional Definition to Real Values}
 
-The first alternative considered is to introduce an algebraic data type that allows the matrix functions to return either reals or integers. 
+The first alternative is to introduce an algebraic data type that allows the matrix functions to return either reals or integers. 
 
 \begin{lstlisting}[language=caml]
 type arg =
@@ -640,17 +675,38 @@ let fold (f : 'a -> 'b -> 'b) (m: 'a t) : 'b =
 	fold_rec f cols rows cols m
 \end{lstlisting}
 
-\noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to proving termination without providing a custom measure. In order to define this measure, we need to expose a \lstinline{floor} function that allows Imandra to prove termination with reals.
+\noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to proving termination without providing a custom measure. In order to define this measure, we need to connect the continuous world of reals with the discrete world of integers (and ultimately ordinals) for which we have induction principles. We chose to develop a \lstinline{floor} function that allows Imandra to prove termination with reals.
 
-\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
+%\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
 
-Extending the functional matrix implementation to reals is not trivial and in the end, it does not provide true polymorphism as the best solution encodes matrix dimensions as reals. The third alternatives involves stepping aside from the functional implementation and using \emph{records} to achieve polymorphism.
+To prove termination of our \lstinline{fold_rec} function recursing along reals, we define an \lstinline{int_of_real : real -> int} function in Imandra, using a subsidiary \lstinline{floor : real -> int -> int} which computes an integer floor of a real by ``counting up'' using its integer argument. In fact, as matrices have non-negative dimensions, it suffices to only consider this conversion for non-negative reals, and we formalise only this. We then have to prove some subsidiary lemmas about the arithmetic of real-to-integer conversion, such as:
+%
+\begin{lstlisting}[language=caml]
+lemma floor_mono x y b =
+  Real.(x <= y && x >= 0. && y >= 0.)
+  ==> floor x b <= floor y b
+\end{lstlisting}
+
+\begin{lstlisting}[language=caml]
+lemma inc_by_one_bigger_conv x =
+  Real.(x >= 0. ==> int_of_real (x + 1.0) > int_of_real x)
+\end{lstlisting}
+
+\noindent Armed with these results, we can then prove termination of \lstinline{fold_rec} and admit it into Imandra's logic via the ordinal pair measure below:
+%
+\begin{lstlisting}[language=caml]
+[@@measure Ordinal.pair
+            (Ordinal.of_int (int_of_real i))
+            (Ordinal.of_int (int_of_real j))]
+\end{lstlisting}
+
+Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff: Using this representation, we were then able to verify real-valued versions of the pruned ACAS Xu networks (TODO: describe the experiments in more detail!). Nevertheless, this does not provide true polymorphism as the best solution encodes matrix dimensions as reals. The third alternatives involves stepping aside from the functional implementation and using \emph{records} with \emph{maps} to achieve polymorphism.
 
 \subsection{Records}
 
-Standard OCaml records are available in Imandra, though they do not support functions as fields. They are a specific group of algebraic data types that allow to group together values of different types, offering the possibility of polymorphism for our matrix type. 
+Standard OCaml records are available in Imandra, though they do not support functions as fields. This is because all records are data values which must support a computable equality relation, and in general one cannot compute equality on functions. Internally in the logic, records correspond to algebraic data-types with a single constructor, and the record fields as named constructor arguments. Like product types, records allow us to group together values of different types, but with convenient accessors and update syntax based on field names, rather than position. This offers the possibility of polymorphism for our matrix type. 
 
-The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to the elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unordered collection of (key;value) pairs where each key is unique. 
+The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to the elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unordered collection of (key;value) pairs where each key is unique, so that this ``payload'' can be included as the field of a record. 
 
 \begin{lstlisting}[language=caml]
 type 'a t = {
@@ -707,7 +763,7 @@ let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 	}
 \end{lstlisting} 
 
-Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-split. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
+Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-splits. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
 
 In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation is more preferable.
 
