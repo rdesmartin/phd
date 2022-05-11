@@ -576,17 +576,75 @@ In the functional implementation given in Listing~\ref{lst:function}  the matrix
 
 To simplify the code and the proofs, three potential solutions were considered:
 \begin{itemize}
-	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations. The simplicity and efficiency of the functional implementation is lost.
+	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations.
 	\item Define a matrix type with real-valued dimensions and values: this poses the problem of proving the function termination when using matrix dimensions in recursion termination conditions.
 	\item Use \emph{records} to provide polymorphism and allow matrix to use integer dimensions and real values.
 \end{itemize}
 
-This section focuses on the last two points.
+This section focuses on these three alternatives.
 
-\subsection{Proving Termination Over Real Numbers}
+\subsection{Extending the Functional Definition to Real Values}
 
-And for that section, I really can't write much on the implementation detail as I'm still trying to understand parts of it. So if Grant finds the time to write it, good, otherwise can we sweep it under the rug in an honest way? i.e. we give a high-level explaination (we need a floor function to go from reals to integers in order to prove termination) but say we won't go into detail of this proof here?
+The first alternative considered is to introduce an algebraic data type that allows the matrix functions to return either reals or integers. 
 
+\begin{lstlisting}[language=caml]
+type arg =
+	| Rows
+	| Cols
+	| Value of int * int
+
+type 'a res = 
+	| Int of int
+	| Val of 'a
+
+type 'a t = arg -> 'a res
+\end{lstlisting}
+
+This allows a form of polymorphism, but it also introduces pattern matching each time we query a value from the matrix. For instance, in order to use dimensions as indices to access a matrix element we have to implement the following \lstinline{nth_res} function:  
+
+\begin{lstlisting} [language=caml]
+let nth_res (m: 'a t) (i: 'b res) (j: 'c res): 'a res = match (i, j) with 
+	| (Int i', Int j') -> m (Value (i', j'))
+	| _                -> Err
+\end{lstlisting}
+
+The simplicity and efficiency of the functional implementation is lost.
+
+We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one described in Listing~\ref{lst:function}:
+
+\begin{lstlisting}[language=caml]
+type arg =
+	| Rows
+	| Cols
+	| Value of real * real
+
+type 'a t = arg -> 'a
+\end{lstlisting}
+
+\noindent A problem arises in recursive functions where matrix dimensions are used as decrementors in stopping conditions, for instance in the \lstinline{fold_rec} function used in the implementation of the folding operation.
+\begin{lstlisting}[language=caml]
+let rec fold_rec f cols i j (m: 'a t) =
+	let dec i j =
+		if j <=. 0. then (i-.1.,cols) else (i,j-.1.)
+	in
+	if (i <=. 0. && j <=. 0.) || (i <. 0. || j <. 0.) then (
+		m (Value (i,j))
+	) else (
+		let i',j' = dec i j in
+		f (m (Value (i,j))) (fold_rec f cols i' j' m)
+	)
+
+let fold (f : 'a -> 'b -> 'b) (m: 'a t) : 'b =
+	let rows = m Rows -. 1. in
+	let cols = m Cols -. 1. in
+	fold_rec f cols rows cols m
+\end{lstlisting}
+
+\noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to proving termination without providing a custom measure. In order to define this measure, we need to expose a \lstinline{floor} function that allows Imandra to prove termination with reals.
+
+\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
+
+Extending the functional matrix implementation to reals is not trivial and in the end, it does not provide true polymorphism as the best solution encodes matrix dimensions as reals. The third alternatives involves stepping aside from the functional implementation and using \emph{records} to achieve polymorphism.
 
 \subsection{Records}
 
@@ -603,18 +661,23 @@ type 'a t = {
 \end{lstlisting}
 
 \knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
-We can then use a convenient syntax to create a record of this type:
+We can then use a convenient syntax to create a record of this type. For instance, a weights matrix from one of the ACAS Xu networks can implemented as:
 
 \begin{lstlisting}[language=caml]
-let m = {
-	rows = 2;
-	cols = 2;
-	vals = Map.cons 0.
+let layer6_map =
+	Map.add (0,10) (0.05374) @@
+	Map.add (0,20) (0.05675) @@
+	...
+	Map.const 0.
+
+let layer6_matrix = {
+	rows = 5;
+	cols = 51;
+	vals = layer6_map;
 }
 \end{lstlisting}
 
-\knote{Why 0, precisely? to have a matrix of zeros? please explain the motivation for this example.
-  This could be a good moment to emphasise that indices are integers and values are reals, so can we add a comment, and may be have some meaningful real there?}
+Note that the matrix dimensions (and the underlying map's keys) are indeed encoded as integers, whereas the weights' values are reals. 
 
 Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the definition for the \lstinline{map2} function is given in Listing~\ref{lst:map2_records}.
 
