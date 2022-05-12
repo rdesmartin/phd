@@ -706,7 +706,17 @@ lemma inc_by_one_bigger_conv x =
             (Ordinal.of_int (int_of_real j))]
 \end{lstlisting}
 
-Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff: Using this representation, we were then able to verify real-valued versions of the pruned ACAS Xu networks (TODO: describe the experiments in more detail!). Nevertheless, this does not provide true polymorphism as the best solution encodes matrix dimensions as reals.
+Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff.
+Using this representation, we were able to verify real-valued versions of the pruned ACAS Xu networks!
+% (TODO: describe the experiments in more detail!).
+In both cases of integer and real-valued matrices, we prunned the networks to 10\% of their original size.
+So, we still do not scale to the full ACAS Xu challenge.  However, the positive news is that the real-valued version
+of the proofs
+uses the same waterfall proof tactic of Imandra, and requires no extra efforts on the programmer to complete the proof.
+This result is significant bearing in mind that many functional and higher-order theorem provers are known to have significant drawbacks when switching to real numbers.
+
+From the functional programming point of view, one may claim that this approach is not elegant enough because
+it does not provide true polymorphism as it encodes matrix dimensions as reals.
 This motivates us to try the third alternative, using \emph{records} with \emph{maps} to achieve polymorphism.
 
 \subsection{Records}
