@@ -812,16 +812,17 @@ This study has three positive concluions:
 \item the Imandra's language is sufficiently flexible to give rise to several versions of the NN library depending on the choice of the matrix implementation, and its automated proof heuristics
   usually adapt rather smoothly to changes in the underlying formalisation.
 
-\item this flexibility bear benefits, when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
+\item this flexibility bears benefits, when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
 
-  \item the transition from integer-valued to real-valued NNs is possible in Imandra. This transition itself opens several choices on matrix representations. However, if the matrix representation is optimal for the task at hand, Imandra takes care of completeing the proofs with reals automatically. This is nice, and this is not always given in functional theorem provers.
+\item the transition from integer-valued to real-valued NNs is possible in Imandra. This transition itself opens several choices for matrix representations. However, if the matrix representation is optimal for the task at hand, Imandra takes care of completeing the proofs with reals and adapts its Waterfall method to the new data type automatically.
+  This is a positive lesson to learn, as this is not always given in functional theorem provers.
 \end{itemize}
 
-The main drawback is our failure to scale to the Acas Xu problem in any version of the NN library~\cite{DPKD22}. However, it may not be such a great surprise, as general-purpose SMT solvers do not scale to the problem, either, and it took special-purpose domain-specific algorithms such as \emph{ReluPlex} to overcome the problem  in Marabou~\cite{}.
+The main drawback is our failure to scale to the full Acas Xu problem in any version of the NN library~\cite{DPKD22}. However, it may not come as a great surprise, as general-purpose SMT solvers do not scale to the problem, either.  It took  domain-specific algorithms such as \emph{ReluPlex} and special-purpose solvers such as \emph{Marabou}  to overcome the scaling problem~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.
 This suggests future solutions that are somewhat orthogonal to the choice of the matrix representation:
 \begin{itemize}
   \item interface with Marabou or other specialised NN solvers in order to scale;
-\item work on a set of native to Imandra proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
+\item work on a set of Imandra's native proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
 \end{itemize}
 
 We leave both as future work. 
