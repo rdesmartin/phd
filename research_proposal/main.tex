@@ -16,7 +16,7 @@
 
 \section{Background}
 % Critical software systems are increasingly complex, so they benefit from formal verification
-The increased complexity of critical software systems has made traditional testing tools insufficient for detecting edge failure cases. One solution, which has gained momentum in the recent years, is the use of formal methods, that use rigorous mathematical tools to model the system, formulate specifications and verify that they are met \cite{amazon_paper}. 
+The increased complexity of critical software systems has made traditional testing tools insufficient for detecting edge failure cases. One solution, which has gained momentum in the recent years, is the use of formal methods, that use rigorous mathematical tools to model the system, formulate specifications and verify that they are met \cite{noauthor_how_nodate}. 
 
 % ML is involved in these systems, so it needs to be verified.
 The introduction of artificial intelligence (AI) components, often relying on machine learning (ML) algorithms is a contributing factor in the complexification of safety-critical systems. Neural networks (NN), a group of ML algorithm, have shown exceptional performance at dealing with noisy data and have been deployed in safety-critical applications like autonomous cars \cite{} or automated trading agents \cite{bao}. Because ML components' failure can lead to the of the whole system's failure \cite{car_paper}, formally verifying the system necessarily involves verifying the ML component.
@@ -69,21 +69,28 @@ First, the initial investigation will help us define our library's structure, su
 In order to evaluate our library, it will be evaluated against standard NN Verification benchmarks such as the ones proposed by the NNVC~\cite{}.
 
 \section{Research Environment and Supervision}
-Imandra Inc will sponsor this research. 
-Prof. Ekaterina Komendentskaya, Dr. Grant Passmore and ?? will co-supervise this research.
-Passmore is the creator of Imandra and the co-founder and co-CEO of Imandra Inc, the company that comercialises it.
+3. The Edinburgh Center for Robotics: engagement with broader range of AI academics and industries, extra training
+
+Imandra will provide infrastructural support for this research, providing funding and guidance for the duration of the project.
+Prof. Ekaterina Komendentskaya, Dr. Grant Passmore and ?? will co-supervise this research. Passmore is the creator of Imandra and the co-founder and co-CEO of the company that comercialises it.
+The research will benefit from the environment of the lab for AI Verification. It will be enriched by attending the lab's seminars and schools and discussions with the lab's members. 
+The research will also be conducted as part of the Edinburgh Center for Robotics. Its ecosystem will give us access to academics and industry experts in the field of AI, as well as additional training.
+
 
 \section{Feasibility}
+Section 6 feasibility: again outline what was proven feasible in the ITP draft, what your hypotheses are about other easy and challenging parts
+
 The projective timeline is that roughly one year is dedicated to each objective of the project.
 I started learning about automated reasoning and formal verification of NNs during my Master's dissertation. This dissertation allowed me to consolidate my knowledge in functional programming, a central part of the Imandra theorem prover, and allowed me to get acquainted with automated reasoning and verification.
 
-As Imandra Inc is a partner of the Lab for AI Verification (and a sponsor for this research), we will have support in terms of infrastructure and technical support. An earlier collaboration for the Master's dissertation was fruitful.
+As Imandra Inc is a partner of the Lab for AI Verification (and a sponsor for this research), we will have support in terms of infrastructure and technical support. An earlier collaboration for the Master'dissertation proved to be fruitful.
+
+
 
 \section{Potential Impact}
 Doing this research within the Lab for AI Verification would allow to contribute to the discussion and research on NN Verification, in particular by presenting early results to seminars organised by the lab and to specialised conferences like FoMlAs.
 
 The partnership with Imandra Inc. means that successful results would impact directly their users by allowing them to formally verify their ML-based systems.
-
 
 
 \end{document}
@@ -94,4 +101,19 @@ The partnership with Imandra Inc. means that successful results would impact dir
 I'd rather deploy a strategy that says: Here is Imandra and its various applications. These various applications may have ML/AI components in the future. This thesis will investigate (a) role of ML/AI components of complex systems (b) methods of verification of these (c) methods for integration of various AI/ML verification components into larger verification projects (d) The project will produce a fully functional AI/ML library in Imandra, which will include domain-specific proof heuristics.
 
 
+Section 2. If it is a section "Research question", then try to formulate just one: eg is Imandra the right programming language/verification tool to enable a wider range of NN verification tasks than was possible before. And then you can have those other research questions
+
+Aims and objectives could be improved. Just one big aim, I think -- to build comprehensive NN verification facilities/libraries in Imandra. Then think about 5 concrete objectives. One of your three objectives (no 2) looks like an objective to me
+
+Methodology: outline the methodology we developed for the ITP paper, say that widening it will be the way to go, may be say which parts of it specifically need further development
+
+Section 5: research environment. 3 things need to be made clear:
+
+ 
+Section 6 feasibility: again outline what was proven feasible in the ITP draft, what your hypotheses are about other easy and challenging parts
+
+
+
 \fi
+
+\bibliography{research-proposal}
