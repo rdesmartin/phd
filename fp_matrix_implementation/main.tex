@@ -610,7 +610,7 @@ in this representation the matrix dimensions will be real-valued as well. This,
 it turns out, is not trivial to deal with for functions which do recursion along
 matrix dimensions.
 
-\knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
+%\knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
 
 To simplify the code and the proofs, three potential solutions were considered:
 \begin{itemize}
@@ -802,8 +802,29 @@ Woods \cite{wood_vectors_2019} compares matrix implementations as lists and as f
 
 
 \section{Conclusions}
-Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrices operations is important.
-We have shown different implementations of matrices and how each implementation influences verification in Imandra; this provides a strong foundation to further develop the Imandra CNN library.
+Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrix operations is important.
+We have shown different implementations of matrices and how each implementation influences verification in Imandra.
+
+This study has three positive concluions:
+\begin{itemize}
+\item the Imandra's language is sufficiently flexible to give rise to several versions of the NN library depending on the choice of the matrix implementation, and its automated proof heuristics
+  usually adapt rather smoothly to changes in the underlying formalisation.
+
+\item this flexibility bear benefits, when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
+
+  \item the transition from integer-valued to real-valued NNs is possible in Imandra. This transition itself opens several choices on matrix representations. However, if the matrix representation is optimal for the task at hand, Imandra takes care of completeing the proofs with reals automatically. This is nice, and this is not always given in functional theorem provers.
+\end{itemize}
+
+The main drawback is our failure to scale to the Acas Xu problem in any version of the NN library~\cite{DPKD22}. However, it may not be such a great surprise, as general-purpose SMT solvers do not scale to the problem, either, and it took special-purpose domain-specific algorithms such as \emph{ReluPlex} to overcome the problem  in Marabou~\cite{}.
+This suggests future solutions that are somewhat orthogonal to the choice of the matrix representation:
+\begin{itemize}
+  \item interface with Marabou or other specialised NN solvers in order to scale;
+\item work on a set of native to Imandra proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
+\end{itemize}
+
+We leave both as future work. 
+
+%this provides a strong foundation to further develop the Imandra CNN library.
 
 
  %
