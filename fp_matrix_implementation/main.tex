@@ -782,6 +782,8 @@ let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 
 Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-splits. This in turn results in a lower scalability. Moreover we can see in the above function definition that we lose considerable conciseness and readability.
 
+The loss of scalability was observed experimentally. Compared to the previous section's results, none of the verification tests on pruned ACAS Xu benchmarks that terminated with the functional matrix implementation terminated with the records implementation.
+
 In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation is more preferable.
 
 \iffalse
