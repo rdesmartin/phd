@@ -97,7 +97,7 @@ of an automated theorem prover. Using these two key features of Imandra, we
 explore how different implementations of matrices can influence automation of
 neural network verification.
 
-\keywords{Neural networks  \and Automated reasoning \and Formal verification \and Functional programming \and Imandra.}
+\keywords{Neural networks  \and Matrices \and Formal verification \and Functional programming \and Imandra.}
 \end{abstract}
 %
 %
@@ -123,7 +123,7 @@ There are several options for defining neural networks in functional
 programming, ranging from defining neurons as record types~\cite{MariaBLFGRG22}
 to treating them as functions with refinement types~\cite{KokkeKKAA20}. But we
 claim that two general considerations should be key to any NN formalisation
-choice of formalisation. Firstly, we must define neural networks as executable
+choice. Firstly, we must define neural networks as executable
 functions, because we want to take advantage of executing them in the functional
 language of choice. Secondly, a generic approach to layer definitions is needed,
 particularly when we implement complex neural network architectures, such as
@@ -295,13 +295,15 @@ By denoting $a_k, W_k, B_k$ --- the activation function, weights and biases of t
 
 The first choice was taken in \cite{heras_incidence_2011} (in the context of dependent types in Coq), in ~\cite{KokkeKKAA20} (in the context of refinement types of F$^*$) and in \cite{grant_sparse_1996} (for sparse matrix encodings in Haskell).  The difference between the first and second approaches was
 discussed in~\cite{wood_vectors_2019} (in Agda, but with no neural network application in mind).
-The third method was taken in ~\cite{MariaBLFGRG22} using Coq (though records there were used to encode individual neurons).
+The third method was taken in ~\cite{MariaBLFGRG22} using Coq  (records were used there to encode individual neurons).
 
-In the next three sections, we will systematise these three approaches using the same formalism and the same language, in order to understand  the influence they have on neural network verification.
+In the next three sections, we will systematise these three approaches using the same formalism and the same language,
+and trace the influence of these choices on neural network verification.
 
 
 \section{Matrices as Lists of Lists} \label{sec:lists}
-We start with re-using  Imandra's  \lstinline{List} library. Lists are defined as inductive data structures. The definition used is identical to OCaml's standard library's:
+We start with re-using  Imandra's  \lstinline{List} library. Lists are defined as inductive data structures:
+%The definition used is identical to OCaml's standard library's:
 
 \begin{lstlisting}
 type 'a list =
@@ -335,7 +337,8 @@ As there is no built-in type available for matrices equivalent to \lstinline{Lis
 		                      lift2 cons hd tl end
 \end{lstlisting}
 
-This implementation allows us to define other useful functions in a concise way. For instance, the dot-product of two matrices, or the $L_0$ distance between two matrices are defined as:
+This implementation allows us to define other useful functions in a concise way. For instance, the dot-product of two matrices %, or the $L_0$ distance between two matrices are
+is defined as:
 
 \begin{lstlisting}[frame=none, language=caml]
 let dot_product (a:real matrix) (b:real matrix): ('a, real matrix) result =
@@ -381,8 +384,8 @@ when computing the dot-product of weights and input to account for that.
   This general effect has been already reported in \cite{KokkeKKAA20}, but it may be instructive to look into the problem from the Imandra perspective.
 
    Robustness of neural networks~\cite{CKDKKAE22} is best amenable to proofs by arithmetic manipulation. This explains the interest of the SMT-solving community in the topic, which started with using Z3 directly~\cite{HuangKWW17}, and has resulted in highly efficient SMT solvers specialised on robustness proofs for neural networks~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.   Imandra's waterfall method~\cite{PassmoreCIABKKM20} defines a default flow for the proof search, which starts with unrolling inductive definitions, simplification and rewriting.
-  As a result, proofs of neural network robustness or proofs as in the ACAS Xu challenge, which do not actually need induction,
-  are not efficiently tackled using Imandra's inductive waterfall.
+  As a result, proofs of neural network robustness or proofs as in the ACAS Xu challenge~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}, which do not actually need induction,
+  are not efficiently tackled using Imandra's inductive waterfall: the proofs simply do not terminate.
   %Instead of performing arithmetic operation in the SMT-solver style, they go Imandra takes a false track with analysis of the inductive structure of matrices.   
   %  unrolling-based~\cite{PassmoreCIABKKM20} proofs of robustness inefficient, as even
  % accessing matrix elements typically involves unfolding several layers of recursion.
@@ -392,7 +395,7 @@ higher-order recursive functions. Blast is an internal custom SAT/SMT solver tha
  However, \lstinline{blast} currently does not support real arithmetic. This
  requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
  integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
- However, even with quantisation and the use of Blast, while we succeed on many smaller benchmarks, Imandra fails to scale `out of the box' to the ACAS Xu challenge, let alone larger neural networks used in computer vision.
+ However, even with quantisation and the use of  \lstinline{blast}, while we succeed on many smaller benchmarks, Imandra fails to scale `out of the box' to the ACAS Xu challenge, let alone larger neural networks used in computer vision.
 
  This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
 %Indeed, when we use our quantised library on quantised ACAS Xu neural networks, \lstinline{blast} does not terminate. 
@@ -400,7 +403,7 @@ This is why, the algorithm \lstinline{reluplex} was introduced in \cite{KaBaDiJu
 \lstinline{reluplex} has since given rise to a domain specific solver Marabou~\cite{KatzHIJLLSTWZDK19}.
 Connecting Imandra to Marabou may be a promising future direction. 
 
-However, there is a silver lining of this method of matrix formalisation. When
+However, this method of matrix formalisation can still bring benefits. When
 we formulate verification properties that genuinely require induction,
 formalisation of matrices as lists does result in more natural, and easily
 automatable proofs. For example, De Maria et al.~\cite{MariaBLFGRG22} formalise
@@ -408,7 +411,7 @@ in Coq \emph{``neuronal archetypes''} for biological neurons. Each archetype is
 a specialised kind of perceptron, in which additional functions are added to
 amplify or inhibit the perceptron's outputs. It is out of scope of this paper to
 formalise the neuronal archetypes in Imandra, but we take methodological insight
-from~\cite{MariaBLFGRG22}. In particular, ~\cite{MariaBLFGRG22} shows that there
+from~\cite{MariaBLFGRG22}. In particular, De Maria et al. show that there
 are natural higher-order properties that one may want to verify.
 
 To make a direct comparison, modern neural network
@@ -433,7 +436,7 @@ network with positive weights is \emph{monotone}, in the sense that, given
 increasing positive inputs, its outputs will also increase}. There has been some
 interest in monotone networks in the literature~\cite{JS98,WehenkelL19}.
 Our experiments show that Imandra can prove such properties by induction on the networks'
-structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks. Note that in these experiments, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.
+structure almost automatically (with the help of a handful of auxiliary lemmas). And the proofs easily go through for both quantised and real-valued neural networks.\footnote{Note that in these experiments, the implementation of weight matrices as lists of lists is implicit -- we redefine matrix manipulation functions that are less general but more convenient for proofs by induction.}
 
 
 \section{Matrices as Functions} \label{sec:function}
@@ -463,7 +466,7 @@ type 'a t = arg -> 'a
 Note the use of the \lstinline{arg} type, which treats a matrix as a function evaluating ``queries'' (e.g., ``how many rows does this matrix have?'' or ``what is the value at index $(i,j)$?''). This formalisation technique is used as Imandra's logic does not allow function values inside of algebraic datatypes. % such as records.
 We thus recover some functionality given by refinement types in~\cite{KokkeKKAA20}.  
 
-Furthermore, we can map over a matrix, \lstinline{map2} over a pair of matrices, transpose a
+Furthermore, we can map over a matrixover a pair of matrices  (using \lstinline{map2}), transpose a
 matrix, construct a diagonal matrix etc.\ without any recursion, since we work
 point-wise on the elements. At the same time, we remove the need for error
 tracking to ensure matrices are of the correct size: because our matrices are
