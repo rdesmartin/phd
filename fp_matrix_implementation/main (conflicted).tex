@@ -649,7 +649,7 @@ let nth_res (m: 'a t) (i: 'b res) (j: 'c res): 'a res = match (i, j) with
 
 The simplicity and efficiency of the functional implementation is lost.
 
-\subsection{Real-Valued Matrix Indices}
+\subsection{Real Valued Matrix Indices}
 
 We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one using integers (Listing~\ref{lst:function}):
 
@@ -709,10 +709,10 @@ lemma inc_by_one_bigger_conv x =
 Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff.
 Using this representation, we were able to verify real-valued versions of the pruned ACAS Xu networks!
 % (TODO: describe the experiments in more detail!).
-In both cases of integer and real-valued matrices, we pruned the networks to 10\% of their original size.
+In both cases of integer and real-valued matrices, we prunned the networks to 10\% of their original size.
 So, we still do not scale to the full ACAS Xu challenge.  However, the positive news is that the real-valued version
 of the proofs
-uses the same waterfall proof tactic of Imandra, and requires no extra effort from the programmer to complete the proof.
+uses the same waterfall proof tactic of Imandra, and requires no extra efforts on the programmer to complete the proof.
 This result is significant bearing in mind that many functional and higher-order theorem provers are known to have significant drawbacks when switching to real numbers.
 
 From the functional programming point of view, one may claim that this approach is not elegant enough because
@@ -721,7 +721,7 @@ This motivates us to try the third alternative, using \emph{records} with \emph{
 
 \subsection{Records}
 
-Standard OCaml records are available in Imandra, though they do not support functions as fields. This is because all records are data values which must support a computable equality relation, and in general one cannot compute equality on functions. Internally in the logic, records correspond to algebraic data types with a single constructor and the record fields to named constructor arguments. Like product types, records allow us to group together values of different types, but with convenient accessors and update syntax based on field names, rather than position. This offers the possibility of polymorphism for our matrix type. 
+Standard OCaml records are available in Imandra, though they do not support functions as fields. This is because all records are data values which must support a computable equality relation, and in general one cannot compute equality on functions. Internally in the logic, records correspond to algebraic data-types with a single constructor, and the record fields as named constructor arguments. Like product types, records allow us to group together values of different types, but with convenient accessors and update syntax based on field names, rather than position. This offers the possibility of polymorphism for our matrix type. 
 
 The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to the elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unordered collection of (key;value) pairs where each key is unique, so that this ``payload'' can be included as the field of a record. 
 
@@ -734,7 +734,7 @@ type 'a t = {
 \end{lstlisting}
 
 %\knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
-We can then use a convenient syntax to create a record of this type. For instance, a weights matrix from one of the ACAS Xu networks can be implemented as:
+We can then use a convenient syntax to create a record of this type. For instance, a weights matrix from one of the ACAS Xu networks can implemented as:
 
 \begin{lstlisting}[language=caml]
 let layer6_map =
@@ -780,13 +780,13 @@ let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 	}
 \end{lstlisting} 
 
-Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-splits. This in turn results in lower scalability.
+Compared to the list implementation, this implementation has the benefit of providing constant-time access to matrix elements. However, compared to the implementation of matrices as functions, it uses recursion to iterate over matrix values which results in a high number of case-splits. This in turn results in a lower scalability.
 %The loss of scalability was observed experimentally.
 Compared to the previous section's results, none of the verification tests on pruned ACAS Xu benchmarks that terminated with the functional matrix implementation terminated with the records implementation.
 
-Moreover, we can see in the above function definition that we lose considerable conciseness and readability.
+Moreover we can see in the above function definition that we lose considerable conciseness and readability.
 
-In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation seems preferable.
+In the end, the main interest of this implementation is its offering polymorphism. In all other regards, the functional implementation seems more preferable.
 
 \iffalse
 \section{Related Work}
@@ -809,12 +809,12 @@ Woods \cite{wood_vectors_2019} compares matrix implementations as lists and as f
 Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrix operations is important.
 We have shown different implementations of matrices and how each implementation influences verification in Imandra.
 
-This study has three positive conclusions:
+This study has three positive concluions:
 \begin{itemize}
 \item Imandra's language is sufficiently flexible to give rise to several versions of the NN library depending on the choice of the matrix implementation, and its automated proof heuristics
   usually adapt rather smoothly to changes in the underlying formalisation.
 
-\item this flexibility bears benefits when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
+\item this flexibility bears benefits, when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
 
 \item the transition from integer-valued to real-valued NNs is possible in Imandra. This transition itself opens several choices for matrix representations. However, if the matrix representation is optimal for the task at hand, Imandra takes care of completing the proofs with reals and adapts its inductive waterfall method to the new data type automatically.
   This is a positive lesson to learn, as this is not always given in functional theorem provers.
