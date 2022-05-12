@@ -527,7 +527,7 @@ Now Imandra's engine takes care of the proof automatically  (when we use the tac
 \fi
 
 
-For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks, a script transforms the original networks into sparse functional matrix representation.
+For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks~\cite{KaBaDiJuKo17Reluplex}, a script transforms the original networks into sparse functional matrix representation.
 For example, layer 5 of one of the networks we used is defined as follows:
 
 \begin{lstlisting}[language=caml]
@@ -614,14 +614,14 @@ matrix dimensions.
 
 To simplify the code and the proofs, three potential solutions were considered:
 \begin{itemize}
-	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations.
+	\item Using an algebraic data type for results of matrix queries: this introduces pattern matching in the implementation of matrix operations, which Section~\ref{sec:lists} taught us to avoid.
 	\item Define a matrix type with real-valued dimensions and values: this poses the problem of proving the function termination when using matrix dimensions in recursion termination conditions.
-	\item Use \emph{records} to provide polymorphism and allow matrix to use integer dimensions and real values.
+	\item Use \emph{records} to provide polymorphism and allow matrices to use integer dimensions and real values.
 \end{itemize}
 
 This section focuses on these three alternatives.
 
-\subsection{Extending the Functional Definition to Real Values}
+\subsection{Algebraic Data Types for  Real Valued Matrices}
 
 The first alternative is to introduce an algebraic data type that allows the matrix functions to return either reals or integers. 
 
@@ -647,6 +647,9 @@ let nth_res (m: 'a t) (i: 'b res) (j: 'c res): 'a res = match (i, j) with
 \end{lstlisting}
 
 The simplicity and efficiency of the functional implementation is lost.
+
+\subsection{Real Valued Matrix Indices}
+
 
 We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one described in Listing~\ref{lst:function}:
 
@@ -678,7 +681,7 @@ let fold (f : 'a -> 'b -> 'b) (m: 'a t) : 'b =
 	fold_rec f cols rows cols m
 \end{lstlisting}
 
-\noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to proving termination without providing a custom measure. In order to define this measure, we need to connect the continuous world of reals with the discrete world of integers (and ultimately ordinals) for which we have induction principles. We chose to develop a \lstinline{floor} function that allows Imandra to prove termination with reals.
+\noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to prove termination without providing a custom measure. In order to define this measure, we need to connect the continuous world of reals with the discrete world of integers (and ultimately ordinals) for which we have induction principles. We chose to develop a \lstinline{floor} function that allows Imandra to prove termination with reals.
 
 %\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
 
@@ -703,7 +706,8 @@ lemma inc_by_one_bigger_conv x =
             (Ordinal.of_int (int_of_real j))]
 \end{lstlisting}
 
-Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff: Using this representation, we were then able to verify real-valued versions of the pruned ACAS Xu networks (TODO: describe the experiments in more detail!). Nevertheless, this does not provide true polymorphism as the best solution encodes matrix dimensions as reals. The third alternatives involves stepping aside from the functional implementation and using \emph{records} with \emph{maps} to achieve polymorphism.
+Extending the functional matrix implementation to reals was not trivial, but it did have a real payoff: Using this representation, we were then able to verify real-valued versions of the pruned ACAS Xu networks (TODO: describe the experiments in more detail!). Nevertheless, this does not provide true polymorphism as the best solution encodes matrix dimensions as reals.
+This motivates us to try the third alternative, using \emph{records} with \emph{maps} to achieve polymorphism.
 
 \subsection{Records}
 
@@ -719,7 +723,7 @@ type 'a t = {
 }
 \end{lstlisting}
 
-\knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
+%\knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
 We can then use a convenient syntax to create a record of this type. For instance, a weights matrix from one of the ACAS Xu networks can implemented as:
 
 \begin{lstlisting}[language=caml]
