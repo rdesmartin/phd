@@ -551,7 +551,7 @@ let layer5_map =
 We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable by Imandra.
 %However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
-With this representation, we are able to verify the properties described in Katz et al.~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
+With this representation, we are able to verify the properties described in ~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
 This is a considerable improvement compared to the previous section, where the implementation did not allow to verify even pruned networks. It is especially impressive that it comes ``for free'' with simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
@@ -577,7 +577,7 @@ components of the functions are reasoned about using a decision procedure for
 the theory of arrays.
 %Moreover, forward-chaining rules (such as those characterizing `relu`) are only applied on demand.
 Informally speaking, Imandra works lazily expanding out the linear algebra as it is needed, and eagerly with sharing information over the DAG.
-Contrast this approach with that of \lstinline{reluplex} which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
+Contrast this approach with that of Reluplex which, informally, starts with the linear algebra fully expanded, and then works to derive laziness and sharing. 
 
 % \knote{The text about matrices as functions, and Imandra's clever DAG method comes in here }
 
@@ -604,13 +604,13 @@ not use \lstinline{[@@blast]} to automate proofs when real values were involved;
 this meant we were restricted to verifying integer-valued networks. On the
 other hand, the matrices as functions implementation extends to proofs with real
 valued matrices, however it is not a trivial extension. In the functional
-implementation given in Listing~\ref{lst:function} the matrix's value must be of
-the same type as its dimensions. Thus, if the matrix elements are real-valued, then
+implementation, the matrix's value must be of
+the same type as its dimensions (Listing~\ref{lst:function}). Thus, if the matrix elements are real-valued, then
 in this representation the matrix dimensions will be real-valued as well. This,
 it turns out, is not trivial to deal with for functions which do recursion along
 matrix dimensions.
 
-\knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
+%\knote{would be nice to show here some code example that gives an idea what the real-valued extension involved}
 
 To simplify the code and the proofs, three potential solutions were considered:
 \begin{itemize}
@@ -630,6 +630,7 @@ type arg =
 	| Rows
 	| Cols
 	| Value of int * int
+	| Default
 
 type 'a res = 
 	| Int of int
@@ -643,15 +644,14 @@ This allows a form of polymorphism, but it also introduces pattern matching each
 \begin{lstlisting} [language=caml]
 let nth_res (m: 'a t) (i: 'b res) (j: 'c res): 'a res = match (i, j) with 
 	| (Int i', Int j') -> m (Value (i', j'))
-	| _                -> Err
+	| _                -> m Default
 \end{lstlisting}
 
 The simplicity and efficiency of the functional implementation is lost.
 
 \subsection{Real Valued Matrix Indices}
 
-
-We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one described in Listing~\ref{lst:function}:
+We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one using integers (Listing~\ref{lst:function}):
 
 \begin{lstlisting}[language=caml]
 type arg =
@@ -752,9 +752,9 @@ let layer6_matrix = {
 
 Note that the matrix dimensions (and the underlying map's keys) are indeed encoded as integers, whereas the weights' values are reals. 
 
-Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the definition for the \lstinline{map2} function is given in Listing~\ref{lst:map2_records}.
+Similarly to the previous implementations, we define a number of useful matrix operations which will be used to define general neural network layer functions. For instance, the \lstinline{map2} function is defined thus:
 
-\begin{lstlisting}[language=caml, label={lst:map2_records}, caption=Map2 implementation]
+\begin{lstlisting}[language=caml, label={lst:map2_records}]
 let rec map2_rec (m: 'a t) (m': 'b t) (f: 'a -> 'b -> 'c) (cols: int) (i: int) (j: int) (res: ((int*int), 'c) Map.t): ((int*int), 'c) Map.t =
 		let dec i j = 
 			if j <= 0 then (i-1, cols) else (i,j-1)     
