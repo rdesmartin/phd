@@ -21,7 +21,7 @@
 %
 \usepackage{listings}
 \usepackage{amsfonts} 
-
+\usepackage{booktabs, colortbl}
 \usepackage[dvipsnames]{xcolor}
 % Setup listing style
 \lstdefinestyle{mystyle} {
@@ -42,11 +42,14 @@
 }
 \lstset{style=mystyle}
 
+\definecolor{lavender}{rgb}{0.9,0.9,0.98}
+
 \usepackage{array}
 \newcolumntype{L}{>{\centering\arraybackslash}m{0.14\textwidth}}
 
 \newcolumntype{K}{>{\centering\arraybackslash}m{0.2\textwidth}}
 
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
 \usepackage{comment,cite}
 \usepackage{subcaption} % For subcaptions on subfigures
@@ -55,7 +58,7 @@
 \usepackage{todonotes}
 \newcommand{\knote}[1]{\todo[inline, color=blue!20]{#1}}
 \newcommand{\rnote}[1]{\todo[inline, color=green!20]{#1}}
-
+\newcommand{\checkinn}{\textbf{CheckINN }}
 
 \begin{document}
 %
@@ -146,7 +149,7 @@ proof development is based on a typed, higher-order lifting of the
 \emph{Boyer-Moore waterfall}~\cite{BM79} for automated induction, tightly
 integrated with novel techniques for SMT modulo recursive functions.
 
-This paper builds upon a recent development of a NN library in Imandra~\cite{DPKD22}, but
+This paper builds upon the recent development of a CheckINN, a NN verification library in Imandra~\cite{DPKD22}, but
 discusses specifically the matrix representation choices and their consequences.  
 
 
@@ -305,7 +308,7 @@ and trace the influence of these choices on neural network verification.
 We start with re-using  Imandra's  \lstinline{List} library. Lists are defined as inductive data structures:
 %The definition used is identical to OCaml's standard library's:
 
-\begin{lstlisting}
+\begin{lstlisting}[language=caml]
 type 'a list =
 | []
 | (::) of 'a * 'a list
@@ -379,7 +382,7 @@ when computing the dot-product of weights and input to account for that.
   It is now easy to see that our desired modular approach to composing layers works as stated. We may define the layers using the syntax:
   \lstinline{let layer_i = fc a weights}, where \lstinline{i} stands for \lstinline{0,1,2,3}, and \lstinline{a} stands for any chosen activation function. 
 
-  Although natural, this formalisation of layers and networks suffers from two problems.  Firstly, it lacks the matrix dimension checks that were readily provided  via refinement types in~\cite{KokkeKKAA20}. This is because Imandra is based on a computational fragment of HOL, and has no refinement or dependent types. To mitigate this, the library we present performs explicit dimension checking via a {\tt result} monad, which clutters the code and adds additional computational checks.
+  Although natural, this formalisation of layers and networks suffers from two problems.  Firstly, it lacks the matrix dimension checks that were readily provided  via refinement types in~\cite{KokkeKKAA20}. This is because Imandra is based on a computational fragment of HOL, and has no refinement or dependent types. To mitigate this, our library performs explicit dimension checking via a {\tt result} monad, which clutters the code and adds additional computational checks.
   Secondly, the matrix definition via the list datatypes makes verification of neural networks very inefficient.
   This general effect has been already reported in \cite{KokkeKKAA20}, but it may be instructive to look into the problem from the Imandra perspective.
 
@@ -394,7 +397,7 @@ There is another verification approach available in Imandra which is better suit
 higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitly to discharge an Imandra verification goal.
  However, \lstinline{blast} currently does not support real arithmetic. This
  requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
- integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
+ integer weights) and results in a \emph{quantised NN implementation}~\cite{DPKD22}.
  However, even with quantisation and the use of  \lstinline{blast}, while we succeed on many smaller benchmarks, Imandra fails to scale `out of the box' to the ACAS Xu challenge, let alone larger neural networks used in computer vision.
 
  This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
@@ -545,13 +548,13 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}.
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}.
 %For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
 %
 We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable to Imandra.
 %However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
-With this representation, we are able to verify the properties described in ~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
+With this representation, we are able to verify the properties described in ~\cite{KaBaDiJuKo17Reluplex} on some of the pruned networks (see Table~\ref{tab:acas_xu}).
 This is a considerable improvement compared to the previous section, where the implementation did not allow to verify even pruned networks. It is especially impressive that it comes ``for free'' by simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
@@ -592,7 +595,55 @@ We are encouraged that the results of
 this section were achieved without tuning Imandra's generic proof automation
 strategies, and hopeful that the development of neural-network specific tactics %and the integration of domain-specific tools
 will help Imandra
-scale to such networks in the future.  
+scale to such networks in the future. 
+
+\begin{table}\label{tab:acas_xu}
+	\centering
+	\begin{tabular}{{ P{1.5cm}  P{2cm}  P{2cm}  P{1.5cm}  P{2cm} P{1.5cm}  P{2cm} P{1.5cm} }}
+		\toprule
+		\multicolumn{2}{P{3.6cm}}{} & \multicolumn{2}{{P{3.6cm}}}{\textbf{Imandra: Pruned and Quantized Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Imandra: Pruned Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Reluplex: Full ACAS Xu Networks}} \\
+		\cmidrule(rl){3-4} \cmidrule(rl){5-6} \cmidrule(rl){7-8}
+		\textbf{Property} & \textbf{Result} & Quantity & Time (s) & Quantity & Time (s) & Quantity & Time (s) \\ 
+		\midrule
+		\rowcolor{lavender}
+		$\phi1$ & SAT 		& 4  & 258	& 20 & 13387 	& 0  &			\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0  & 		& 0	 & 		 	& 41 & 394517	\\
+		\rowcolor{lavender}
+		& TIMEOUT 	& 5  & 		& 24 & 			& 4  &			\\
+		$\phi2$ & SAT 		& 0  & 		& 7  & 2098 	& 35 & 82419	\\
+		& UNSAT 	& 0  & 		& 2	 & 896	 	& 1  & 463		\\
+		& TIMEOUT 	& 0  & 		& 26 & 			& 4  &			\\
+		\rowcolor{lavender}
+		$\phi3$ & SAT 		& 0  & 		& 39 & 10453 	& 35 & 82419	\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0  & 		& 0	 & 		 	& 1  & 463		\\
+		\rowcolor{lavender}
+		& TIMEOUT 	& 0  & 		& 2  & 			& 4  &			\\
+		$\phi4$ & SAT 		& 16 & 1422	& 36 & 21533	& 0  & 		 	\\
+		& UNSAT 	& 1  & 114	& 0  & 			& 32 & 12475 	\\
+		& TIMEOUT 	& 18 & 3	& 5  & 			& 0  &			\\
+		\rowcolor{lavender}
+		$\phi5$ & SAT 		& 1  & 57	& 1  & 98	 	& 0  & 			\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0  &		& 0  & 		 	& 1	 & 19355	\\
+		$\phi6$ & SAT 		& 1  & 196  & 1  & 98		& 0  &			\\
+		& UNSAT 	& 0  & 		& 0  & 			& 1  & 180288	\\
+		\rowcolor{lavender}
+		$\phi7$ & TIMEOUT 	& 1	 &		& 1  &	 		& 1  & 			\\
+		$\phi8$ & SAT 		& 0  & 		& 0  & 			& 1  & 40102 	\\
+		& TIMEOUT 	& 1  & 		& 1  & 			& 0  & 			\\
+		\rowcolor{lavender}
+		$\phi9$ & SAT		& 1  & 66	& 1  & 109	 	& 0  & 			\\
+		\rowcolor{lavender}
+		& UNSAT		& 0  &		& 0  & 			& 1  & 99634 	\\
+		$\phi10$ & SAT		& 1 & 116	& 0  &			& 0  &			\\
+		& UNSAT 	& 0 & 		& 1  & 637 		& 1  & 19944	\\
+		& TIMEOUT 	& 0 & 		& 0  &	 		& 0 &			\\
+		\bottomrule
+	\end{tabular}
+	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The verifications were run on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set at 5 minutes}
+\end{table}	 
 
 
 \section{Real-valued Matrices; Records  and Arrays}\label{sec:records}
@@ -811,8 +862,7 @@ We have shown different implementations of matrices and how each implementation 
 
 This study has three positive conclusions:
 \begin{itemize}
-\item Imandra's language is sufficiently flexible to give rise to several versions of the NN library depending on the choice of the matrix implementation, and its automated proof heuristics
-  usually adapt rather smoothly to changes in the underlying formalisation.
+\item Imandra's language is sufficiently flexible to give rise to implementations of several choices of matrix in the CheckINN library. Its proof heuristics adapt smoothly to these different implementations, with very little hints needed to figure out the appropriate proof strategy (induction, SAT/SMT proving or Boyer-Moore style waterfall).
 
 \item this flexibility bears benefits when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
 
@@ -820,16 +870,21 @@ This study has three positive conclusions:
   This is a positive lesson to learn, as this is not always given in functional theorem provers.
 \end{itemize}
 
-The main drawback is our failure to scale to the full ACAS Xu problem in any version of the NN library~\cite{DPKD22}. However, it may not come as a great surprise, as general-purpose SMT solvers do not scale to the problem, either.  It took  domain-specific algorithms such as \emph{ReluPlex} and special-purpose solvers such as \emph{Marabou}  to overcome the scaling problem~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.
+The main drawback is our failure to scale to the full ACAS Xu problem regardless of the matrix implementation choice in CheckINN~\cite{DPKD22}. However, it may not come as a great surprise, as general-purpose SMT solvers do not scale to the problem, either.  It took  domain-specific algorithms such as \emph{ReluPlex} and special-purpose solvers such as \emph{Marabou}  to overcome the scaling problem~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.
 This suggests future solutions that are somewhat orthogonal to the choice of the matrix representation:
 \begin{itemize}
   \item interface with Marabou or other specialised NN solvers in order to scale;
 \item work on a set of Imandra's native proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
 \end{itemize}
 
-We leave both as future work. 
+In addition, evaluating CheckINN against other smaller benchmarks like those presented in \cite{noauthor_vnn_nodate} and \cite{dutta_output_2018} would allow to assess more accurately its scalability on different problems. We leave these as future work. 
 
-%this provides a strong foundation to further develop the Imandra CNN library.
+%introduce CheckINN in more detail
+These conclusions provide a strong foundation to further develop the CheckINN library, as its aim is to offer verification of a wide array of neural network properties and we have shown that the choice of matrix implementation eventually influences the range of verifiable properties. CheckINN's goals are notably to 
+
+Finally, we believe that the methods we described could be useful in other theorem provers (both first- and higher-order) that combine functional programming and automated proof methods, such as ACL2, PVS, Isabelle/HOL and Coq. 
+%For example, in all of these systems, reasoning about matrices represented as lists will require the development of a library of lemmas (with many proven by induction) giving algebraic laws for matrix element access and manipulation. As we have observed, functions defining core matrix operations (e.g., convolution) are often necessarily more complex over lists than their counterparts over (matrices represented as) functions; indeed, in the latter representation, many core functions can be defined in a non-recursive way, which can have major payoff for theorem proving efficiency.
+Overall, as these various prominent theorem proving systems work ultimately with functional programs over algebraic datatypes like Imandra, our core observations carry over to them in a natural way.
 
 
  %
@@ -840,5 +895,56 @@ We leave both as future work.
 %
 \bibliographystyle{splncs04}
 \bibliography{MatrixFormalisation}
+
+\appendix
+
+\section{CheckINN Results on Pruned ACAS Xu Benchmark}\label{ann:acas_xu}
+\begin{table*}
+	\centering
+	\begin{tabular}{{ P{1.5cm}  P{2cm}  P{2cm}  P{1.5cm}  P{2cm} P{1.5cm}  P{2cm} P{1.5cm} }}
+		\toprule
+		\multicolumn{2}{P{3.6cm}}{} & \multicolumn{2}{{P{3.6cm}}}{\textbf{Imandra: Pruned and Quantized Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Imandra: Pruned Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Reluplex: Full ACAS Xu Networks}} \\
+		\cmidrule(rl){3-4} \cmidrule(rl){5-6} \cmidrule(rl){7-8}
+		\textbf{Property} & \textbf{Result} & Quantity & Time (s) & Quantity & Time (s) & Quantity & Time (s) \\ 
+		\midrule
+		\rowcolor{lavender}
+		$\phi1$ & SAT 		& 4  & 258	& 20 & 13387 	& 0  &			\\
+		\rowcolor{lavender}
+				& UNSAT 	& 0  & 		& 0	 & 		 	& 41 & 394517	\\
+		\rowcolor{lavender}
+				& TIMEOUT 	& 5  & 		& 24 & 			& 4  &			\\
+		$\phi2$ & SAT 		& 0  & 		& 7  & 2098 	& 35 & 82419	\\
+				& UNSAT 	& 0  & 		& 2	 & 896	 	& 1  & 463		\\
+				& TIMEOUT 	& 0  & 		& 26 & 			& 4  &			\\
+		\rowcolor{lavender}
+		$\phi3$ & SAT 		& 0  & 		& 39 & 10453 	& 35 & 82419	\\
+		\rowcolor{lavender}
+				& UNSAT 	& 0  & 		& 0	 & 		 	& 1  & 463		\\
+		\rowcolor{lavender}
+				& TIMEOUT 	& 0  & 		& 2  & 			& 4  &			\\
+		$\phi4$ & SAT 		& 16 & 1422	& 36 & 21533	& 0  & 		 	\\
+				& UNSAT 	& 1  & 114	& 0  & 			& 32 & 12475 	\\
+				& TIMEOUT 	& 18 & 3	& 5  & 			& 0  &			\\
+		\rowcolor{lavender}
+		$\phi5$ & SAT 		& 1  & 57	& 1  & 98	 	& 0  & 			\\
+		\rowcolor{lavender}
+				& UNSAT 	& 0  &		& 0  & 		 	& 1	 & 19355	\\
+		$\phi6$ & SAT 		& 1  & 196  & 1  & 98		& 0  &			\\
+				& UNSAT 	& 0  & 		& 0  & 			& 1  & 180288	\\
+		\rowcolor{lavender}
+		$\phi7$ & TIMEOUT 	& 1	 &		& 1  &	 		& 1  & 			\\
+		$\phi8$ & SAT 		& 0  & 		& 0  & 			& 1  & 40102 	\\
+				& TIMEOUT 	& 1  & 		& 1  & 			& 0  & 			\\
+		\rowcolor{lavender}
+		$\phi9$ & SAT		& 1  & 66	& 1  & 109	 	& 0  & 			\\
+		\rowcolor{lavender}
+				& UNSAT		& 0  &		& 0  & 			& 1  & 99634 	\\
+		$\phi10$ & SAT		& 1 & 116	& 0  &			& 0  &			\\
+				& UNSAT 	& 0 & 		& 1  & 637 		& 1  & 19944	\\
+				& TIMEOUT 	& 0 & 		& 0  &	 		& 0 &			\\
+		\bottomrule
+	\end{tabular}
+	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The verifications were run on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set at 5 minutes}\label{fig:acas}
+\end{table*}	
 
 \end{document}
