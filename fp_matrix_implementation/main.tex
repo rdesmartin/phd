@@ -599,50 +599,50 @@ scale to such networks in the future.
 
 \begin{table}\label{tab:acas_xu}
 	\centering
-	\begin{tabular}{{ P{1.5cm}  P{2cm}  P{2cm}  P{1.5cm}  P{2cm} P{1.5cm}  P{2cm} P{1.5cm} }}
+	\begin{tabular}{{ P{1.5cm}  P{2cm}  P{2cm} P{1.5cm}  P{2cm} P{1.5cm} }}
 		\toprule
-		\multicolumn{2}{P{3.6cm}}{} & \multicolumn{2}{{P{3.6cm}}}{\textbf{Imandra: Pruned and Quantized Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Imandra: Pruned Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Reluplex: Full ACAS Xu Networks}} \\
-		\cmidrule(rl){3-4} \cmidrule(rl){5-6} \cmidrule(rl){7-8}
-		\textbf{Property} & \textbf{Result} & Quantity & Time (s) & Quantity & Time (s) & Quantity & Time (s) \\ 
+		\multicolumn{2}{P{3.6cm}}{} & \multicolumn{2}{P{3.6cm}}{\textbf{CheckINN: Pruned Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Reluplex: Full ACAS Xu Networks}} \\
+		\cmidrule(rl){3-4} \cmidrule(rl){5-6}
+		\textbf{Property} & \textbf{Result} & Quantity & Time (s) & Quantity & Time (s) \\ 
 		\midrule
 		\rowcolor{lavender}
-		$\phi1$ & SAT 		& 4  & 258	& 20 & 13387 	& 0  &			\\
+		$\phi1$ & SAT 		& 20 & 13387 	& 0  &			\\
 		\rowcolor{lavender}
-		& UNSAT 	& 0  & 		& 0	 & 		 	& 41 & 394517	\\
+		& UNSAT 	& 0	 & 		 	& 41 & 394517	\\
 		\rowcolor{lavender}
-		& TIMEOUT 	& 5  & 		& 24 & 			& 4  &			\\
-		$\phi2$ & SAT 		& 0  & 		& 7  & 2098 	& 35 & 82419	\\
-		& UNSAT 	& 0  & 		& 2	 & 896	 	& 1  & 463		\\
-		& TIMEOUT 	& 0  & 		& 26 & 			& 4  &			\\
+		& TIMEOUT 	& 24 & 			& 4  &			\\
+		$\phi2$ & SAT 		& 7  & 2098 	& 35 & 82419	\\
+		& UNSAT 	& 2	 & 896	 	& 1  & 463		\\
+		& TIMEOUT 	& 26 & 			& 4  &			\\
 		\rowcolor{lavender}
-		$\phi3$ & SAT 		& 0  & 		& 39 & 10453 	& 35 & 82419	\\
+		$\phi3$ & SAT 		& 39 & 10453 	& 35 & 82419	\\
 		\rowcolor{lavender}
-		& UNSAT 	& 0  & 		& 0	 & 		 	& 1  & 463		\\
+		& UNSAT 	& 0	 & 		 	& 1  & 463		\\
 		\rowcolor{lavender}
-		& TIMEOUT 	& 0  & 		& 2  & 			& 4  &			\\
-		$\phi4$ & SAT 		& 16 & 1422	& 36 & 21533	& 0  & 		 	\\
-		& UNSAT 	& 1  & 114	& 0  & 			& 32 & 12475 	\\
-		& TIMEOUT 	& 18 & 3	& 5  & 			& 0  &			\\
+		& TIMEOUT 	& 2  & 			& 4  &			\\
+		$\phi4$ & SAT 		& 36 & 21533	& 0  & 		 	\\
+		& UNSAT 	& 0  & 			& 32 & 12475 	\\
+		& TIMEOUT 	& 5  & 			& 0  &			\\
 		\rowcolor{lavender}
-		$\phi5$ & SAT 		& 1  & 57	& 1  & 98	 	& 0  & 			\\
+		$\phi5$ & SAT 		& 1  & 98	 	& 0  & 			\\
 		\rowcolor{lavender}
-		& UNSAT 	& 0  &		& 0  & 		 	& 1	 & 19355	\\
-		$\phi6$ & SAT 		& 1  & 196  & 1  & 98		& 0  &			\\
-		& UNSAT 	& 0  & 		& 0  & 			& 1  & 180288	\\
+		& UNSAT 	& 0  & 		 	& 1	 & 19355	\\
+		$\phi6$ & SAT 		& 1  & 98		& 0  &			\\
+		& UNSAT 	& 0  & 			& 1  & 180288	\\
 		\rowcolor{lavender}
-		$\phi7$ & TIMEOUT 	& 1	 &		& 1  &	 		& 1  & 			\\
-		$\phi8$ & SAT 		& 0  & 		& 0  & 			& 1  & 40102 	\\
-		& TIMEOUT 	& 1  & 		& 1  & 			& 0  & 			\\
+		$\phi7$ & TIMEOUT 	& 1  &	 		& 1  & 			\\
+		$\phi8$ & SAT 		& 0  & 			& 1  & 40102 	\\
+		& TIMEOUT 	& 1  & 			& 0  & 			\\
 		\rowcolor{lavender}
-		$\phi9$ & SAT		& 1  & 66	& 1  & 109	 	& 0  & 			\\
+		$\phi9$ & SAT		& 1  & 109	 	& 0  & 			\\
 		\rowcolor{lavender}
-		& UNSAT		& 0  &		& 0  & 			& 1  & 99634 	\\
-		$\phi10$ & SAT		& 1 & 116	& 0  &			& 0  &			\\
-		& UNSAT 	& 0 & 		& 1  & 637 		& 1  & 19944	\\
-		& TIMEOUT 	& 0 & 		& 0  &	 		& 0 &			\\
+		& UNSAT		& 0  & 			& 1  & 99634 	\\
+		$\phi10$ & SAT		& 0  &			& 0  &			\\
+		& UNSAT 	& 1  & 637 		& 1  & 19944	\\
+		& TIMEOUT 	& 0  &	 		& 0 &			\\
 		\bottomrule
 	\end{tabular}
-	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The verifications were run on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set at 5 minutes}
+	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The CheckINN verifications were run with 90\% of the weights pruned, on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set to 5 hours}
 \end{table}	 
 
 
@@ -733,8 +733,6 @@ let fold (f : 'a -> 'b -> 'b) (m: 'a t) : 'b =
 \end{lstlisting}
 
 \noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to prove termination without providing a custom measure. In order to define this measure, we need to connect the continuous world of reals with the discrete world of integers (and ultimately ordinals) for which we have induction principles. We chose to develop a \lstinline{floor} function that allows Imandra to prove termination with reals.
-
-%\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
 
 To prove termination of our \lstinline{fold_rec} function recursing along reals, we define an \lstinline{int_of_real : real -> int} function in Imandra, using a subsidiary \lstinline{floor : real -> int -> int} which computes an integer floor of a real by ``counting up'' using its integer argument. In fact, as matrices have non-negative dimensions, it suffices to only consider this conversion for non-negative reals, and we formalise only this. We then have to prove some subsidiary lemmas about the arithmetic of real-to-integer conversion, such as:
 %
@@ -857,12 +855,12 @@ Woods \cite{wood_vectors_2019} compares matrix implementations as lists and as f
 
 
 \section{Conclusions}
-Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrix operations is important.
+Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks, which the library CheckINN aims to do. To that aim, implementing matrices and matrix operations is important.
 We have shown different implementations of matrices and how each implementation influences verification in Imandra.
 
 This study has three positive conclusions:
 \begin{itemize}
-\item Imandra's language is sufficiently flexible to give rise to implementations of several choices of matrix in the CheckINN library. Its proof heuristics adapt smoothly to these different implementations, with very little hints needed to figure out the appropriate proof strategy (induction, SAT/SMT proving or Boyer-Moore style waterfall).
+\item Imandra's language is sufficiently flexible to give rise to implementations of several choices of matrix in the CheckINN library. Its proof heuristics adapt smoothly to these different implementations, with very little hints needed to figure out the appropriate proof strategy (induction, waterfall or SAT/SMT proving).
 
 \item this flexibility bears benefits when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
 
@@ -877,15 +875,15 @@ This suggests future solutions that are somewhat orthogonal to the choice of the
 \item work on a set of Imandra's native proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
 \end{itemize}
 
-In addition, evaluating CheckINN against other smaller benchmarks like those presented in \cite{noauthor_vnn_nodate} and \cite{dutta_output_2018} would allow to assess more accurately its scalability on different problems. We leave these as future work. 
+In addition, evaluating CheckINN against other benchmarks would allow to assess more accurately its scalability on different problems, e.g. robustness verification of image classification networks on the MNIST dataset \cite{noauthor_vnn_nodate} or range analysis of randomly generated networks \cite{dutta_output_2018}. We leave these as future work. 
 
 %introduce CheckINN in more detail
-These conclusions provide a strong foundation to further develop the CheckINN library, as its aim is to offer verification of a wide array of neural network properties and we have shown that the choice of matrix implementation eventually influences the range of verifiable properties. CheckINN's goals are notably to 
+These conclusions provide a strong foundation to further develop the CheckINN library, as its aim is to offer verification of a wide array of neural network properties and we have shown that the choice of matrix implementation eventually influences the range of verifiable properties. 
 
 Finally, we believe that the methods we described could be useful in other theorem provers (both first- and higher-order) that combine functional programming and automated proof methods, such as ACL2, PVS, Isabelle/HOL and Coq. 
-%For example, in all of these systems, reasoning about matrices represented as lists will require the development of a library of lemmas (with many proven by induction) giving algebraic laws for matrix element access and manipulation. As we have observed, functions defining core matrix operations (e.g., convolution) are often necessarily more complex over lists than their counterparts over (matrices represented as) functions; indeed, in the latter representation, many core functions can be defined in a non-recursive way, which can have major payoff for theorem proving efficiency.
+For example, in all these systems functions defining matrix operations (e.g., convolution) over lists  are often more complex compared to their counterparts over matrices represented as functions, which can benefit from non-recursive definitions.
 Overall, as these various prominent theorem proving systems work ultimately with functional programs over algebraic datatypes like Imandra, our core observations carry over to them in a natural way.
-
+%For example, in all of these systems, reasoning about matrices represented as lists will require the development of a library of lemmas (with many proven by induction) giving algebraic laws for matrix element access and manipulation. As we have observed, functions defining core matrix operations (e.g., convolution) are often necessarily more complex over lists than their counterparts over (matrices represented as) functions; indeed, in the latter representation, many core functions can be defined in a non-recursive way, which can have major payoff for theorem proving efficiency.
 
  %
 % ---- Bibliography ----
@@ -895,7 +893,7 @@ Overall, as these various prominent theorem proving systems work ultimately with
 %
 \bibliographystyle{splncs04}
 \bibliography{MatrixFormalisation}
-
+\end{document}
 \appendix
 
 \section{CheckINN Results on Pruned ACAS Xu Benchmark}\label{ann:acas_xu}
@@ -947,4 +945,4 @@ Overall, as these various prominent theorem proving systems work ultimately with
 	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The verifications were run on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set at 5 minutes}\label{fig:acas}
 \end{table*}	
 
-\end{document}
+
