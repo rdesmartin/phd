@@ -1,5 +1,5 @@
-\documentclass[handout]{beamer}
-%\documentclass{beamer}
+%\documentclass[notes=only]{beamer}
+\documentclass{beamer}
 \usepackage{pgfpages}
 \mode<handout>{%
 %	\pgfpagesuselayout{2 on 1}[a4paper] 
@@ -103,15 +103,15 @@ Representation as a Verification Choice}
 \begin{frame}{Neural Network Verification}
 
 \begin{itemize}
-\item SMT-solvers
+\item<1-> SMT-solvers
 
-\item Abstract interpretation
+\item<1-> Abstract interpretation
 
-\item Functional programming
+\item<2-> Functional programming
 
 \begin{itemize}
-	\item Coq formalisations~\footcite{BS19,de_maria_use_2021}
-	\item Dependent types~\footcite{kokke_neural_2020}
+	\item<3-> Coq formalisations~\footcite{BS19,de_maria_use_2021}
+	\item<3-> Dependent types~\footcite{kokke_neural_2020}
 \end{itemize}
 \end{itemize}
 
@@ -126,7 +126,7 @@ Representation as a Verification Choice}
 \begin{itemize}
 	\item<1-> Generalisation
 	\item<2-> Executability
-	\item<3-> Tensors/\textbf{Matrices}
+	\item<3-> \textbf{Matrices}
 \end{itemize}
 \end{frame}
 
@@ -144,6 +144,8 @@ Representation as a Verification Choice}
 \note{Presentation of Imandra\\ Todo: add schema of waterfall; other illustrations?}
 
 \begin{frame}[fragile]{Imandra: Example}
+
+\includegraphics[height=5cm]{figures/mlp_iris.png}
 
 \begin{block}{Goal}
 \begin{lstlisting}
@@ -172,7 +174,7 @@ Representation as a Verification Choice}
 
 \end{frame}
 \note{let us take an example to present Imandra's syntax and the necessity for matrices: the Iris dataset, where we classify flowers from 4 measurements into 3 subspecies of Iris \\
-	todo: add schema of perceptron + formula of layer0
+	
 }
 
 \begin{frame}[fragile]{Neural Network Formalisation in Imandra: an Example}
@@ -197,7 +199,7 @@ We already have some of our initial requirements satisfied: the network is forma
 
 \begin{frame}
 	\begin{block}{Problem}
-		What consequences does the choice of matrix formalisation has on the type of properties that we can verify?
+		What consequences does the choice of matrix formalisation have on the range of verifiable properties?
 	\end{block}
 \end{frame}
 
@@ -273,6 +275,17 @@ We already have some of our initial requirements satisfied: the network is forma
 By using these functions, we can define Fully-connected layers and convolutional layers and pooling layers, which let us in turn build fnns and convolutional nns
 }
 
+\begin{frame}[fragile]{Matrices as Lists of Lists}
+		\onslide<1->{Built-in library of list manipulation functions}
+	
+	\onslide<1->{General definitions}
+	
+		\onslide<1->{Necessitate error handling}
+		\begin{lstlisting}
+			let model input = layer_0 input >>= layer_1 >>= layer_2 >>= layer_4;;
+		\end{lstlisting}
+\end{frame}
+
 
 \begin{frame}[fragile]{Matrices as Lists: Reachability Properties}
 	\begin{itemize}
@@ -283,6 +296,8 @@ By using these functions, we can define Fully-connected layers and convolutional
 	\item<3->{Blast SAT-solver}
 
 	\item<4->{Quantisation}
+	
+	\item<5->{Limited scalability: pruned ACAS Xu~\footcite{KaBaDiJuKo17Reluplex}}
 	\end{itemize}
 \end{frame}
 
@@ -367,6 +382,15 @@ By using these functions, we can define Fully-connected layers and convolutional
 
 \note{With this matrix implementation, it is better suited for Imandra's default waterfall tactic: less recursion, only when folding a matrix, and no pattern matching for errors. As an added bonus, code legibility is improved. With this we manage to prove reachability properties on FNN using the waterfall tactic.}
 
+\begin{frame}{Reachability Properties}
+		\begin{itemize}
+			\item<1-> Adapts naturally to Imandra's waterfall tactic
+			\item<1-> Verification of pruned ACAS Xu network
+			\item<2-> But still quantised
+		\end{itemize}
+\end{frame}
+
+
 \begin{frame}[fragile]{Matrices as Functions}
 	\begin{lstlisting}
 		type arg =
@@ -380,7 +404,7 @@ By using these functions, we can define Fully-connected layers and convolutional
 	\onslide<2>{Return type is the same (\lstinline{int}) for dimensions and values}
 \end{frame}
 
-\note{We managed to prove properties without blast, so we could use real numbers. However, if you recall the type definition, it does not support real numbers yet: the type of the matrix values must be the same as the type of its dimensions, namely integers. Switching is not trivial}
+\note{We managed to prove properties with Imandra's waterfall tactic, so we are not subjected to blast's limit with integers anymore; we could use real numbers. However, if you recall the type definition, it does not support real numbers yet: the type of the matrix values must be the same as the type of its dimensions, namely integers. Switching is not trivial}
 
 % --------------------------------------------------
 % ------ PART IV. ----------------------------------
@@ -418,6 +442,15 @@ By using these functions, we can define Fully-connected layers and convolutional
 		
 		type 'a matrix = arg -> 'a
 	\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Real Matrix Dimensions}
+	\begin{itemize}
+		\item<1-> Problem for function termination
+		\item<1-> Intermediate lemmas necessary
+		\item<2-> Once proof of termination is accepted, reachability property is proved
+	\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Records}
