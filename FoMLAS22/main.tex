@@ -21,11 +21,12 @@
 %
 \usepackage{listings}
 \usepackage{amsfonts} 
-
+\usepackage{booktabs, colortbl}
 \usepackage[dvipsnames]{xcolor}
 % Setup listing style
-\lstdefinestyle{mystyle} {
+\lstdefinestyle{imandra} {
 	aboveskip=20pt,
+	language=caml,
 	keywordstyle=\color{blue},
 	commentstyle=\itshape\color{purple},
 	stringstyle=\color{PineGreen},
@@ -37,16 +38,30 @@
 	keepspaces=true,
 	showspaces=false,                
 	showstringspaces=false,
-	showtabs=false,                  
+	showtabs=false,
 	tabsize=2
 }
-\lstset{style=mystyle}
+\lstset{
+	style=imandra,
+	morekeywords={
+		lemma,
+		verify,
+		theorem, 
+		@@measure, 
+		@@auto, 
+		@@fc, 
+		@@blast
+	}
+}
+
+\definecolor{lavender}{rgb}{0.9,0.9,0.98}
 
 \usepackage{array}
 \newcolumntype{L}{>{\centering\arraybackslash}m{0.14\textwidth}}
 
 \newcolumntype{K}{>{\centering\arraybackslash}m{0.2\textwidth}}
 
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
 \usepackage{comment,cite}
 \usepackage{subcaption} % For subcaptions on subfigures
@@ -55,7 +70,7 @@
 \usepackage{todonotes}
 \newcommand{\knote}[1]{\todo[inline, color=blue!20]{#1}}
 \newcommand{\rnote}[1]{\todo[inline, color=green!20]{#1}}
-
+\newcommand{\checkinn}{\textbf{CheckINN }}
 
 \begin{document}
 %
@@ -146,7 +161,7 @@ proof development is based on a typed, higher-order lifting of the
 \emph{Boyer-Moore waterfall}~\cite{BM79} for automated induction, tightly
 integrated with novel techniques for SMT modulo recursive functions.
 
-This paper builds upon a recent development of a NN library in Imandra~\cite{DPKD22}, but
+This paper builds upon the recent development of a CheckINN, a NN verification library in Imandra~\cite{DPKD22}, but
 discusses specifically the matrix representation choices and their consequences.  
 
 
@@ -157,7 +172,8 @@ language~\cite{PassmoreCIABKKM20} by means of an example. When we say we want to
 formalise neural networks as functions, essentially, we aim to be able to define
 a NN using just a line of code:
 
-\begin{lstlisting}[language=caml, label={lst:model}]
+%\begin{lstlisting}[label={lst:model}]
+\begin{lstlisting}[label={lst:model}]
   let cnn input =
       layer_0 input >>= layer_1 >>= layer_2 >>= layer_3
 \end{lstlisting}
@@ -194,7 +210,7 @@ In most classification problems, classes are not linearly separated. To handle s
      Let us start with a naive prototype of perceptron in Imandra.  The Iris data set is a ``Hello World'' example in data mining; it represents 3 kinds of Iris flowers using 4 selected features.
       In Imandra, inputs can be represented as a data type: % \lstinline{iris_input}
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 type iris_input = {
   sepal_len: real;
   sepal_width: real;
@@ -205,7 +221,7 @@ type iris_input = {
 \begin{comment}
 To process inputs of this type in the future, we can simply define
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let process_iris_input (x: iris_input) =
   let x0 = x.sepal_len in
   let x1 = x.sepal_width in
@@ -218,7 +234,7 @@ let process_iris_input (x: iris_input) =
 And we define a perceptron as a function:
 %Finally, we assume we have an access to some trained perceptron that already has appropriate real-valued weights, and we get the following function, as expected:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let layer_0 (w0, w1, w2, w3, w4) (x1, x2, x3, x4) =
   relu (w0 +. w1 *. x1 +. w2 *. x2 +. w3 *. x3 +. w4 *. x4)
 \end{lstlisting}
@@ -226,7 +242,7 @@ where \lstinline{*.} and   \lstinline{+.} are \emph{times} and \emph{plus} defin
 
 Already in this simple example, one perceptron is not sufficient, as we must map its output to three classes. We use the usual machine learning literature trick and define a further layer of $3$ neurons, each representing one class. Each of these neurons is itself a perceptron, with one incoming weight and one bias. This gives us:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let layer_1 (w1, b1, w2, b2, w3, b3) f1 =
   let o1 = w1 *. f1 +. b1 in
   let o2 = w2 *. f1 +. b2 in
@@ -247,7 +263,7 @@ And thus the resulting function that defines our neural network model is:
 %Suppose the given perceptron weights are\\  \lstinline{let weights_0 = (1.0023211, 1.1538234, -0.30127743, 0.9319558, 2.179688)} and\\
 %\lstinline{let weights_1 = (-2.651993, 0.81521773, -0.83343804,  0.27192873, -0.27463955,  -1.21521)}, in which case this is our resulting function:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let model input = process_iris_input input
         |> layer_0 weights_0 |> layer_1 weights_1 |>
                                         process_iris_output
@@ -379,7 +395,7 @@ when computing the dot-product of weights and input to account for that.
   It is now easy to see that our desired modular approach to composing layers works as stated. We may define the layers using the syntax:
   \lstinline{let layer_i = fc a weights}, where \lstinline{i} stands for \lstinline{0,1,2,3}, and \lstinline{a} stands for any chosen activation function. 
 
-  Although natural, this formalisation of layers and networks suffers from two problems.  Firstly, it lacks the matrix dimension checks that were readily provided  via refinement types in~\cite{KokkeKKAA20}. This is because Imandra is based on a computational fragment of HOL, and has no refinement or dependent types. To mitigate this, the library we present performs explicit dimension checking via a {\tt result} monad, which clutters the code and adds additional computational checks.
+  Although natural, this formalisation of layers and networks suffers from two problems.  Firstly, it lacks the matrix dimension checks that were readily provided  via refinement types in~\cite{KokkeKKAA20}. This is because Imandra is based on a computational fragment of HOL, and has no refinement or dependent types. To mitigate this, our library performs explicit dimension checking via a {\tt result} monad, which clutters the code and adds additional computational checks.
   Secondly, the matrix definition via the list datatypes makes verification of neural networks very inefficient.
   This general effect has been already reported in \cite{KokkeKKAA20}, but it may be instructive to look into the problem from the Imandra perspective.
 
@@ -394,7 +410,7 @@ There is another verification approach available in Imandra which is better suit
 higher-order recursive functions. Blast is an internal custom SAT/SMT solver that can be called explicitly to discharge an Imandra verification goal.
  However, \lstinline{blast} currently does not support real arithmetic. This
  requires us to \emph{quantize} the neural networks we use (i.e.\ convert them to
- integer weights) and results in a \emph{quantised NN library}~\cite{DPKD22}.
+ integer weights) and results in a \emph{quantised NN implementation}~\cite{DPKD22}.
  However, even with quantisation and the use of  \lstinline{blast}, while we succeed on many smaller benchmarks, Imandra fails to scale `out of the box' to the ACAS Xu challenge, let alone larger neural networks used in computer vision.
 
  This also does not come as a surprise: as~\cite{KaBaDiJuKo17Reluplex} points out, general-purpose SMT solvers do not scale to NN verification challenges.
@@ -476,7 +492,7 @@ and sparse by construction (with default 0 outside of their dimension bounds).
 
 The resulting function definitions are much more succinct than with lists of lists; take for instance \lstinline{map2}:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 	function
 		| Rows -> rows m
@@ -486,7 +502,7 @@ let map2 (f: 'a -> 'b -> 'c) (m: 'a t) (m': 'b t) : 'c t =
 
 \noindent This allows us to define fully connected layers:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let fc (f: 'a -> 'b) (weights: 'a Matrix.t) (input: 'a Matrix.t) = 
 	let open Matrix in
 	function
@@ -507,7 +523,7 @@ let fc (f: 'a -> 'b) (weights: 'a Matrix.t) (input: 'a Matrix.t) =
 \noindent The only help Imandra needs to prove this automatically -- are the forward-chaining rules about the $relu$ function:
 
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 	lemma relu_pos x =
 	x >= 0 ==> (relu x) [@trigger] = x
 	[@@auto] [@@fc]
@@ -530,7 +546,7 @@ Now Imandra's engine takes care of the proof automatically  (when we use the tac
 For full definitions of matrix operations and layers, the reader is referred to~\cite{DPKD22}, but we will give some definitions here, mainly to convey the general style (and simplicity!) of the code.  Working with the ACAS Xu networks~\cite{KaBaDiJuKo17Reluplex}, a script transforms the original networks into sparse functional matrix representation.
 For example, layer 5 of one of the networks we used is defined as follows:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let layer5 = fc relu (
   function
   | Rows -> 50
@@ -545,13 +561,13 @@ let layer5_map =
   Map.const 0
 \end{lstlisting}
 
-\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rather rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}.
+\noindent The sparsity effect is achieved by \emph{pruning} the network, i.e. removing weights that have the smallest impact on the network's performance. The weight's magnitude is used to select those to be pruned. This method, though rudimentary, is considered a reasonable pruning technique \cite{lecun_optimal_1989}.
 %For the ACAS Xu problem, we are limited to a single pruning step, and cannot evaluate the pruned network's accuracy as no training data is accessible. We leave the evaluation of pruning techniques in relation to verfication for future work. 
 %
 We do this mainly in order to reduce the amount of computation Imandra needs to perform, and to make the verification problem amenable to Imandra.
 %However, unlike the  \lstinline{[@@blast]} experiment, this code generically works for any types of values, integer or real -- although as discussed in Section~\ref{sec:records} some additional effort is needed for real numbers.
 
-With this representation, we are able to verify the properties described in ~\cite{KaBaDiJuKo17Reluplex} on the pruned networks.
+With this representation, we are able to verify the properties described in ~\cite{KaBaDiJuKo17Reluplex} on some of the pruned networks (see Table~\ref{tab:acas_xu}).
 This is a considerable improvement compared to the previous section, where the implementation did not allow to verify even pruned networks. It is especially impressive that it comes ``for free'' by simply changing the underlying matrix representations.
 
 %This section shows the capability of Imandra as an automated prover for domain-specific verification.
@@ -592,10 +608,58 @@ We are encouraged that the results of
 this section were achieved without tuning Imandra's generic proof automation
 strategies, and hopeful that the development of neural-network specific tactics %and the integration of domain-specific tools
 will help Imandra
-scale to such networks in the future.  
+scale to such networks in the future. 
+
+\begin{table}\label{tab:acas_xu}
+	\caption{Results of experiments ran on the properties and networks from the ACAS Xu benchmark~\cite{KaBaDiJuKo17Reluplex}. The CheckINN verifications were run with 90\% of the weights pruned, on virtual machines with four 2.6 GHz Intel Ice Lake virtual processors and 16GB RAM. Timeout was set to 5 hours}
+	\centering
+	\begin{tabular}{{ P{1.5cm}  P{2cm}  P{2cm} P{1.5cm}  P{2cm} P{1.5cm} }}
+		\toprule
+		\multicolumn{2}{P{3.6cm}}{} & \multicolumn{2}{P{3.6cm}}{\textbf{CheckINN: Pruned Networks}} & \multicolumn{2}{P{3.6cm}}{\textbf{Reluplex: Full ACAS Xu Networks}} \\
+		\cmidrule(rl){3-4} \cmidrule(rl){5-6}
+		\textbf{Property} & \textbf{Result} & Quantity & Time (s) & Quantity & Time (s) \\ 
+		\midrule
+		\rowcolor{lavender}
+		$\phi1$ & SAT 		& 20 & 13387 	& 0  &			\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0	 & 		 	& 41 & 394517	\\
+		\rowcolor{lavender}
+		& TIMEOUT 	& 24 & 			& 4  &			\\
+		$\phi2$ & SAT 		& 7  & 2098 	& 35 & 82419	\\
+		& UNSAT 	& 2	 & 896	 	& 1  & 463		\\
+		& TIMEOUT 	& 26 & 			& 4  &			\\
+		\rowcolor{lavender}
+		$\phi3$ & SAT 		& 39 & 10453 	& 35 & 82419	\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0	 & 		 	& 1  & 463		\\
+		\rowcolor{lavender}
+		& TIMEOUT 	& 2  & 			& 4  &			\\
+		$\phi4$ & SAT 		& 36 & 21533	& 0  & 		 	\\
+		& UNSAT 	& 0  & 			& 32 & 12475 	\\
+		& TIMEOUT 	& 5  & 			& 0  &			\\
+		\rowcolor{lavender}
+		$\phi5$ & SAT 		& 1  & 98	 	& 0  & 			\\
+		\rowcolor{lavender}
+		& UNSAT 	& 0  & 		 	& 1	 & 19355	\\
+		$\phi6$ & SAT 		& 1  & 98		& 0  &			\\
+		& UNSAT 	& 0  & 			& 1  & 180288	\\
+		\rowcolor{lavender}
+		$\phi7$ & TIMEOUT 	& 1  &	 		& 1  & 			\\
+		$\phi8$ & SAT 		& 0  & 			& 1  & 40102 	\\
+		& TIMEOUT 	& 1  & 			& 0  & 			\\
+		\rowcolor{lavender}
+		$\phi9$ & SAT		& 1  & 109	 	& 0  & 			\\
+		\rowcolor{lavender}
+		& UNSAT		& 0  & 			& 1  & 99634 	\\
+		$\phi10$ & SAT		& 0  &			& 0  &			\\
+		& UNSAT 	& 1  & 637 		& 1  & 19944	\\
+		& TIMEOUT 	& 0  &	 		& 0 &			\\
+		\bottomrule
+	\end{tabular}
+\end{table}	 
 
 
-\section{Real-valued Matrices; Records  and Arrays}\label{sec:records}
+\section{Real-Valued Matrices; Records  and Arrays}\label{sec:records}
 
 It is time we turn to the question of incorporating real values into matrices.
 Section~\ref{sec:lists} defined matrices as lists of lists; and that definition
@@ -625,7 +689,7 @@ This section focuses on these three alternatives.
 
 The first alternative is to introduce an algebraic data type that allows the matrix functions to return either reals or integers. 
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 type arg =
 	| Rows
 	| Cols
@@ -641,7 +705,7 @@ type 'a t = arg -> 'a res
 
 This allows a form of polymorphism, but it also introduces pattern matching each time we query a value from the matrix. For instance, in order to use dimensions as indices to access a matrix element we have to implement the following \lstinline{nth_res} function:  
 
-\begin{lstlisting} [language=caml]
+\begin{lstlisting} 
 let nth_res (m: 'a t) (i: 'b res) (j: 'c res): 'a res = match (i, j) with 
 	| (Int i', Int j') -> m (Value (i', j'))
 	| _                -> m Default
@@ -653,7 +717,7 @@ The simplicity and efficiency of the functional implementation is lost.
 
 We then turn to using real numbers to encode matrix dimensions. The implementation is symmetric to the one using integers (Listing~\ref{lst:function}):
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 type arg =
 	| Rows
 	| Cols
@@ -663,7 +727,7 @@ type 'a t = arg -> 'a
 \end{lstlisting}
 
 \noindent A problem arises in recursive functions where matrix dimensions are used as decrementors in stopping conditions, for instance in the \lstinline{fold_rec} function used in the implementation of the folding operation.
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let rec fold_rec f cols i j (m: 'a t) =
 	let dec i j =
 		if j <=. 0. then (i-.1.,cols) else (i,j-.1.)
@@ -683,24 +747,22 @@ let fold (f : 'a -> 'b -> 'b) (m: 'a t) : 'b =
 
 \noindent Imandra only accepts definitions of functions for which it can prove termination. The dimensions being real numbers prevents Imandra from being able to prove termination without providing a custom measure. In order to define this measure, we need to connect the continuous world of reals with the discrete world of integers (and ultimately ordinals) for which we have induction principles. We chose to develop a \lstinline{floor} function that allows Imandra to prove termination with reals.
 
-%\rnote{Here is the place for an explaination of the custom measure and \lstinline{floor} function}
-
 To prove termination of our \lstinline{fold_rec} function recursing along reals, we define an \lstinline{int_of_real : real -> int} function in Imandra, using a subsidiary \lstinline{floor : real -> int -> int} which computes an integer floor of a real by ``counting up'' using its integer argument. In fact, as matrices have non-negative dimensions, it suffices to only consider this conversion for non-negative reals, and we formalise only this. We then have to prove some subsidiary lemmas about the arithmetic of real-to-integer conversion, such as:
 %
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 lemma floor_mono x y b =
   Real.(x <= y && x >= 0. && y >= 0.)
   ==> floor x b <= floor y b
 \end{lstlisting}
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 lemma inc_by_one_bigger_conv x =
   Real.(x >= 0. ==> int_of_real (x + 1.0) > int_of_real x)
 \end{lstlisting}
 
 \noindent Armed with these results, we can then prove termination of \lstinline{fold_rec} and admit it into Imandra's logic via the ordinal pair measure below:
 %
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 [@@measure Ordinal.pair
             (Ordinal.of_int (int_of_real i))
             (Ordinal.of_int (int_of_real j))]
@@ -725,7 +787,7 @@ Standard OCaml records are available in Imandra, though they do not support func
 
 The approach here is similar to the one in Section~\ref{sec:function}: matrices are stored as mappings between indices and values, which allows for constant-time access to the elements. However, instead of having the mapping be implemented as a function, here we implement it as a \lstinline{Map}, i.e. an unordered collection of (key;value) pairs where each key is unique, so that this ``payload'' can be included as the field of a record. 
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 type 'a t = {
 	rows: int;
 	cols: int;
@@ -736,7 +798,7 @@ type 'a t = {
 %\knote{Is this a good time to talk about connection to arrays? then what? Remi, see also the slides by Coq people about using arrays for natrices in Coq. May be some comparison will be good here? }
 We can then use a convenient syntax to create a record of this type. For instance, a weights matrix from one of the ACAS Xu networks can be implemented as:
 
-\begin{lstlisting}[language=caml]
+\begin{lstlisting}
 let layer6_map =
 	Map.add (0,10) (0.05374) @@
 	Map.add (0,20) (0.05675) @@
@@ -806,13 +868,12 @@ Woods \cite{wood_vectors_2019} compares matrix implementations as lists and as f
 
 
 \section{Conclusions}
-Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks. In order to do this, implementing matrices and matrix operations is important.
+Functional programming languages that are tightly coupled with automated reasoning capabilities, like Imandra, offer us the possibility to verify and perform inference with neural networks, which the library CheckINN aims to do. To that aim, implementing matrices and matrix operations is important.
 We have shown different implementations of matrices and how each implementation influences verification in Imandra.
 
 This study has three positive conclusions:
 \begin{itemize}
-\item Imandra's language is sufficiently flexible to give rise to several versions of the NN library depending on the choice of the matrix implementation, and its automated proof heuristics
-  usually adapt rather smoothly to changes in the underlying formalisation.
+\item Imandra's language is sufficiently flexible to give rise to implementations of several choices of matrix in the CheckINN library. Its proof heuristics adapt smoothly to these different implementations, with very little hints needed to figure out the appropriate proof strategy (induction, waterfall or SAT/SMT proving).
 
 \item this flexibility bears benefits when it comes to diversifying the range of NN properties we verify: thus, matrices as lists made possible proofs of higher-order properties by induction, whereas matrices as functions were more amenable to automated proofs in SAT/SMT solving style.
 
@@ -820,17 +881,22 @@ This study has three positive conclusions:
   This is a positive lesson to learn, as this is not always given in functional theorem provers.
 \end{itemize}
 
-The main drawback is our failure to scale to the full ACAS Xu problem in any version of the NN library~\cite{DPKD22}. However, it may not come as a great surprise, as general-purpose SMT solvers do not scale to the problem, either.  It took  domain-specific algorithms such as \emph{ReluPlex} and special-purpose solvers such as \emph{Marabou}  to overcome the scaling problem~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.
+The main drawback is our failure to scale to the full ACAS Xu problem regardless of the matrix implementation choice in CheckINN~\cite{DPKD22}. However, it may not come as a great surprise, as general-purpose SMT solvers do not scale to the problem, either.  It took  domain-specific algorithms such as \emph{ReluPlex} and special-purpose solvers such as \emph{Marabou}  to overcome the scaling problem~\cite{KaBaDiJuKo17Reluplex,KatzHIJLLSTWZDK19}.
 This suggests future solutions that are somewhat orthogonal to the choice of the matrix representation:
 \begin{itemize}
   \item interface with Marabou or other specialised NN solvers in order to scale;
 \item work on a set of Imandra's native proof heuristics and tactics, tailored specifically to Imandra's NN formalisations.
 \end{itemize}
 
-We leave both as future work. 
+In addition, evaluating CheckINN against other benchmarks would allow to assess more accurately its scalability on different problems, e.g. robustness verification of image classification networks on the MNIST dataset \cite{noauthor_vnn_nodate} or range analysis of randomly generated networks \cite{dutta_output_2018}. We leave these as future work. 
 
-%this provides a strong foundation to further develop the Imandra CNN library.
+%introduce CheckINN in more detail
+These conclusions provide a strong foundation to further develop the CheckINN library, as its aim is to offer verification of a wide array of neural network properties and we have shown that the choice of matrix implementation eventually influences the range of verifiable properties. 
 
+Finally, we believe that the methods we described could be useful in other theorem provers (both first- and higher-order) that combine functional programming and automated proof methods, such as ACL2, PVS, Isabelle/HOL and Coq. 
+For example, in all these systems functions defining matrix operations (e.g., convolution) over lists  are often more complex compared to their counterparts over matrices represented as functions, which can benefit from non-recursive definitions.
+Overall, as these various prominent theorem proving systems work ultimately with functional programs over algebraic datatypes like Imandra, our core observations carry over to them in a natural way.
+%For example, in all of these systems, reasoning about matrices represented as lists will require the development of a library of lemmas (with many proven by induction) giving algebraic laws for matrix element access and manipulation. As we have observed, functions defining core matrix operations (e.g., convolution) are often necessarily more complex over lists than their counterparts over (matrices represented as) functions; indeed, in the latter representation, many core functions can be defined in a non-recursive way, which can have major payoff for theorem proving efficiency.
 
  %
 % ---- Bibliography ----
@@ -840,5 +906,4 @@ We leave both as future work.
 %
 \bibliographystyle{splncs04}
 \bibliography{MatrixFormalisation}
-
 \end{document}
