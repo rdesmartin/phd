@@ -20,7 +20,7 @@ type expr =
 Whereas in (b), the equality constraints and the inequality constraints (i.e. the bounds of each variables) are kept in two separate lists, which gives us a quicker access to corresponding elements for instance in the function `check_contradiction`:
 
 ```ocaml
-let check_contradiction (contradiction: real list) (tableau: real list list) (upper_bounds: real list) (real list): bool =
+let check_contradiction (contradiction: real list) (tableau: real list list) (upper_bounds: real list) (lower_bounds: real list): bool =
 let linear_combination = LinArith.compute_combination contradiction tableau in
 LinArith.compute_row_upper_bound linear_combination upper_bounds lower_bounds <. 0.
 ```
