@@ -1,3 +1,12 @@
+
+# 22 September 2023
+
+Here's the next steps we discussed in the last supervision meeting with Kathrin:  
+
+- Spend ~ a day re-writing Grant's proof from scratch to understand it deeply and writing up as I go
+- Write formal proof of Farkas lemma with references/links to the corresponding parts of the code
+- Write up of different ways to integrate the Farkas lemma proof with the proof checker with pros and cons
+- Write up an overview of the current state of the overall proof checker's proof of correctness
 # 18 August 2023
 
 One limitation of our work is that there is a discrepancy between the initial trained and verified model and the model encoded in the checked proofs: training and verification uses floating point numbers; Marabou uses overapproximation to mitigate the numerical instability, and rounds the values during the proof serialisation; the proof checker then uses exact real arithmetic to reason about the weights. Ultimately, though, if the checker validates a proof, it means that the encoded model satisfies the desired property and we can extract it from the proof for safe inference.

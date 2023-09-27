@@ -26,9 +26,21 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "3935715c5203dd03",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "2023_09_27_integrating proof with checker.md",
+                "mode": "source",
+                "source": false
+              }
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -94,7 +106,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Journal.md",
+                "file": "2023_09_27_integrating proof with checker.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -111,7 +123,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Journal.md",
+                "file": "2023_09_27_integrating proof with checker.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -134,7 +146,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Journal.md"
+                "file": "2023_09_27_integrating proof with checker.md"
               }
             }
           }
@@ -155,8 +167,9 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "b3d1c02163811a73",
+  "active": "3935715c5203dd03",
   "lastOpenFiles": [
-    "Journal.md"
+    "Journal.md",
+    "2023_09_27_integrating proof with checker.md"
   ]
 }
